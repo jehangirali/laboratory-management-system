@@ -1,0 +1,31 @@
+<UserControl x:Class="LaboratoryManagement.Desktop.Views.TestsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common" xmlns:ctl="clr-namespace:LaboratoryManagement.Desktop.Controls">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Test catalog &amp; panels" Style="{StaticResource PageTitle}"/>
+        <Border DockPanel.Dock="Top" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <TextBlock TextWrapping="Wrap" Text="Seeded prices are 0 (not set) and seeded reference ranges/units are EXAMPLES ONLY. Review prices and validate every range against your analyzer, method and population before clinical use."/>
+        </Border>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBox Width="260" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,10,0"/>
+            <ComboBox Width="220" ItemsSource="{Binding Categories}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding CategoryId}" Margin="0,0,10,0"/>
+            <CheckBox Content="Show inactive" IsChecked="{Binding ShowInactive}" Margin="0,0,14,0"/>
+            <Button Content="New test" Style="{StaticResource PrimaryButton}" Command="{Binding NewTestCommand}" IsEnabled="{Binding CanManage}"/>
+            <Button Content="New panel" Command="{Binding NewPanelCommand}" IsEnabled="{Binding CanManage}"/>
+            <Button Content="Edit selected" Command="{Binding EditCommand}"/>
+            <TextBlock Text="{Binding Unpriced, StringFormat=Unpriced / sample-priced in list: {0}}" Style="{StaticResource Muted}"/>
+        </StackPanel>
+        <DataGrid ItemsSource="{Binding Tests}" SelectedItem="{Binding Selected}">
+            <DataGrid.InputBindings><MouseBinding MouseAction="LeftDoubleClick" Command="{Binding EditCommand}"/></DataGrid.InputBindings>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="90"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                <DataGridTextColumn Header="Category" Binding="{Binding Category.Name}" Width="190"/>
+                <DataGridTextColumn Header="Specimen" Binding="{Binding SpecimenType.Name}" Width="110"/>
+                <DataGridCheckBoxColumn Header="Panel" Binding="{Binding IsPanel, Mode=OneWay}" Width="55"/>
+                <DataGridTextColumn Header="TAT (h)" Binding="{Binding TurnaroundHours}" Width="60"/>
+                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="90"/>
+                <DataGridCheckBoxColumn Header="Sample price" Binding="{Binding PriceIsSample, Mode=OneWay}" Width="90"/>
+                <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive, Mode=OneWay}" Width="55"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

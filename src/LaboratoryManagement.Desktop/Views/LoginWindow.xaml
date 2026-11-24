@@ -1,0 +1,32 @@
+<c:DialogWindowBase x:Class="LaboratoryManagement.Desktop.Views.LoginWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common"
+        Title="Sign in" Width="760" Height="460" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="300"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Background="{StaticResource PrimaryBrush}">
+            <StackPanel VerticalAlignment="Center" Margin="28">
+                <TextBlock Text="LAB" FontSize="48" FontWeight="Black" Foreground="White"/>
+                <TextBlock Text="Laboratory Management System" FontSize="18" Foreground="White" TextWrapping="Wrap"/>
+                <TextBlock Text="Patients, orders, samples, results and reports in one place." Foreground="#CCFBF1" TextWrapping="Wrap" Margin="0,12,0,0"/>
+            </StackPanel>
+        </Border>
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="48,0">
+            <TextBlock Text="Sign in" Style="{StaticResource PageTitle}"/>
+            <TextBlock Text="Username" Style="{StaticResource FieldLabel}"/>
+            <TextBox x:Name="UserBox" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
+            <TextBlock Text="Password" Style="{StaticResource FieldLabel}"/>
+            <Grid>
+                <PasswordBox x:Name="PwBox" PasswordChanged="Pw_Changed"/>
+                <TextBox x:Name="PwText" Visibility="Collapsed" TextChanged="PwText_Changed"/>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <CheckBox x:Name="ShowPw" Content="Show password" Checked="ShowPw_Changed" Unchecked="ShowPw_Changed" Margin="0,0,18,0"/>
+                <CheckBox Content="Remember username" IsChecked="{Binding RememberUsername}"/>
+            </StackPanel>
+            <TextBlock Text="{Binding Message}" Foreground="{StaticResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,0" Visibility="{Binding Message, Converter={StaticResource NullToCollapsed}}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                <Button Content="Sign in" Style="{StaticResource PrimaryButton}" Command="{Binding LoginCommand}" IsDefault="True" Padding="26,8"/>
+                <Button Content="Exit" Click="Exit_Click" IsCancel="True"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</c:DialogWindowBase>

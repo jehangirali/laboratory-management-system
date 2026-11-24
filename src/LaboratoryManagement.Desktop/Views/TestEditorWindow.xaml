@@ -1,0 +1,110 @@
+<c:DialogWindowBase x:Class="LaboratoryManagement.Desktop.Views.TestEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common" xmlns:ctl="clr-namespace:LaboratoryManagement.Desktop.Controls"
+        Title="{Binding Heading}" Width="940" Height="720" MinHeight="560">
+    <Window.Resources>
+        <c:NullableDecimalConverter x:Key="NullDec"/>
+    </Window.Resources>
+    <Grid Margin="16">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock Text="{Binding Heading}" Style="{StaticResource SectionTitle}"/>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="140"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,10,0"><TextBlock Text="Code *" Style="{StaticResource FieldLabel}"/><TextBox Text="{Binding Code}"/></StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,0,10,0"><TextBlock Text="Name *" Style="{StaticResource FieldLabel}"/><TextBox Text="{Binding Name}"/></StackPanel>
+                <StackPanel Grid.Column="2" Margin="0,0,10,0"><TextBlock Text="Category *" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox ItemsSource="{Binding Categories}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding CategoryId}"/></StackPanel>
+                <StackPanel Grid.Column="3" Margin="0,0,10,0"><TextBlock Text="Price" Style="{StaticResource FieldLabel}"/>
+                    <TextBox Text="{Binding Price}" IsEnabled="{Binding CanEditPrice}"/></StackPanel>
+                <StackPanel Grid.Column="4"><TextBlock Text="TAT (hours)" Style="{StaticResource FieldLabel}"/><TextBox Text="{Binding Tat}"/></StackPanel>
+            </Grid>
+            <TextBlock Text="{Binding PriceNote}" Foreground="{StaticResource WarnBrush}" Visibility="{Binding PriceNote, Converter={StaticResource NullToCollapsed}}"/>
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                <StackPanel Margin="0,0,10,0"><TextBlock Text="Specimen" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox ItemsSource="{Binding Specimens}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding SpecimenTypeId}"/></StackPanel>
+                <StackPanel Grid.Column="1" Margin="0,0,10,0"><TextBlock Text="Container" Style="{StaticResource FieldLabel}"/>
+                    <ComboBox ItemsSource="{Binding Containers}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding ContainerId}"/></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="Method" Style="{StaticResource FieldLabel}"/><TextBox Text="{Binding Method}"/></StackPanel>
+            </Grid>
+            <TextBlock Text="Collection / preparation instructions" Style="{StaticResource FieldLabel}"/>
+            <TextBox Text="{Binding Instructions}"/>
+            <CheckBox Content="Active" IsChecked="{Binding IsActive}" Margin="0,8,0,8"/>
+        </StackPanel>
+
+        <!-- Test: parameters + ranges -->
+        <Grid Grid.Row="1" Visibility="{Binding IsNotPanel, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <DockPanel Margin="0,0,0,8">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Result parameters" Style="{StaticResource SectionTitle}" Margin="0,0,16,0"/>
+                    <Button Content="Add parameter" Command="{Binding AddParameterCommand}"/>
+                    <Button Content="Remove selected" Command="{Binding RemoveParameterCommand}"/>
+                </StackPanel>
+                <DataGrid ItemsSource="{Binding Parameters}" SelectedItem="{Binding SelectedParameter}" IsReadOnly="False" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Order" Binding="{Binding DisplayOrder}" Width="60"/>
+                        <DataGridTextColumn Header="Parameter name" Binding="{Binding Name}" Width="*"/>
+                        <DataGridTemplateColumn Header="Result type" Width="150">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.ResultTypes, RelativeSource={RelativeSource AncestorType=Window}}" SelectedItem="{Binding ResultType, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"/>
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Unit" Width="110">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.Units, RelativeSource={RelativeSource AncestorType=Window}}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding UnitId, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"/>
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Decimals" Binding="{Binding DecimalPlaces}" Width="70"/>
+                        <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive}" Width="60"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+            <DockPanel Grid.Row="1">
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="Reference ranges for selected parameter" Style="{StaticResource SectionTitle}" Margin="0,0,16,0"/>
+                    <Button Content="Add range" Command="{Binding AddRangeCommand}"/>
+                    <TextBlock Text="Examples only until validated by your laboratory. Leave gender 'Any' and age blank for a single range. Qualitative parameters use 'Normal text'." Style="{StaticResource Muted}"/>
+                </StackPanel>
+                <DataGrid ItemsSource="{Binding Ranges}" IsReadOnly="False" CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Gender" Width="90">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <ComboBox ItemsSource="{Binding DataContext.GenderOptions, RelativeSource={RelativeSource AncestorType=Window}}" DisplayMemberPath="Name" SelectedValuePath="Value" SelectedValue="{Binding Gender, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"/>
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Age from (y)" Binding="{Binding MinAgeYears}" Width="80"/>
+                        <DataGridTextColumn Header="Age to (y)" Binding="{Binding MaxAgeYears, Converter={StaticResource NullDec}}" Width="80"/>
+                        <DataGridTextColumn Header="Low" Binding="{Binding Low, Converter={StaticResource NullDec}}" Width="70"/>
+                        <DataGridTextColumn Header="High" Binding="{Binding High, Converter={StaticResource NullDec}}" Width="70"/>
+                        <DataGridTextColumn Header="Critical low" Binding="{Binding CriticalLow, Converter={StaticResource NullDec}}" Width="80"/>
+                        <DataGridTextColumn Header="Critical high" Binding="{Binding CriticalHigh, Converter={StaticResource NullDec}}" Width="80"/>
+                        <DataGridTextColumn Header="Normal text" Binding="{Binding NormalText}" Width="110"/>
+                        <DataGridTextColumn Header="Printed text (optional)" Binding="{Binding DisplayText}" Width="*"/>
+                        <DataGridCheckBoxColumn Header="Example" Binding="{Binding IsExample, Mode=OneWay}" IsReadOnly="True" Width="60"/>
+                        <DataGridTemplateColumn Width="60">
+                            <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                <Button Content="Remove" Padding="4,1" Margin="0" Command="{Binding DataContext.RemoveRangeCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                            </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Grid>
+
+        <!-- Panel: components -->
+        <DockPanel Grid.Row="1" Visibility="{Binding IsPanel, Converter={StaticResource BoolToVis}}">
+            <TextBlock DockPanel.Dock="Top" Text="Component tests (results are entered on the component tests; nothing is duplicated)" Style="{StaticResource SectionTitle}"/>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                <ComboBox ItemsSource="{Binding AvailableTests}" DisplayMemberPath="DisplayText" SelectedItem="{Binding ComponentToAdd}" Width="360"/>
+                <Button Content="Add" Command="{Binding AddComponentCommand}" Margin="8,0,8,0"/>
+                <Button Content="Remove selected" Command="{Binding RemoveComponentCommand}"/>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding Components}" DisplayMemberPath="DisplayText" SelectedItem="{Binding SelectedComponent}"/>
+        </DockPanel>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Save" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}"/>
+            <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True" Margin="0"/>
+        </StackPanel>
+    </Grid>
+</c:DialogWindowBase>

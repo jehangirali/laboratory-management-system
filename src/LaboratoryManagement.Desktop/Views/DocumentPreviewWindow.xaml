@@ -1,0 +1,15 @@
+<Window x:Class="LaboratoryManagement.Desktop.Views.DocumentPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Print preview" Width="900" Height="780" WindowStartupLocation="CenterOwner">
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="White" Padding="10" BorderBrush="{StaticResource BorderBrushLight}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Print..." Style="{StaticResource PrimaryButton}" Click="Print_Click"/>
+                <Button Content="Export XPS..." Click="Xps_Click"/>
+                <TextBlock Text="Tip: choose 'Microsoft Print to PDF' in the print dialog to create a PDF." Style="{StaticResource Muted}" Margin="12,0,0,0"/>
+            </StackPanel>
+        </Border>
+        <DocumentViewer x:Name="Viewer"/>
+    </DockPanel>
+</Window>

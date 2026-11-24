@@ -1,0 +1,72 @@
+<c:DialogWindowBase x:Class="LaboratoryManagement.Desktop.Views.OrderDetailWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common" xmlns:ctl="clr-namespace:LaboratoryManagement.Desktop.Controls"
+        Title="Order details" Width="900" Height="680">
+    <Grid Margin="16">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <Border Style="{StaticResource Card}">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding Order.OrderNo}" FontSize="20" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding Order.OrderedAt, Converter={StaticResource LocalDate}}" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Order.Status, StringFormat=Status: {0}}" Margin="0,6,0,0"/>
+                    <TextBlock Text="{Binding Order.Report.Status, StringFormat=Report: {0}}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Order.Patient.FullName}" FontWeight="SemiBold" FontSize="15"/>
+                    <TextBlock Text="{Binding Order.Patient.PatientNo}" Style="{StaticResource Muted}"/>
+                    <TextBlock Text="{Binding Order.Doctor.Name, StringFormat=Referred by: {0}, FallbackValue=Referred by: -}" Margin="0,6,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="{Binding Order.NetAmount, StringFormat=Net: {0:N2}}"/>
+                    <TextBlock Text="{Binding Order.Discount, StringFormat=Discount: {0:N2}}"/>
+                    <TextBlock Text="{Binding Order.PaidAmount, StringFormat=Paid: {0:N2}}"/>
+                    <TextBlock Text="{Binding Order.Balance, StringFormat=Balance: {0:N2}}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Order.PaymentStatus}" Style="{StaticResource Muted}"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <TabControl Grid.Row="1" Margin="0,10,0,10">
+            <TabItem Header="Billed items">
+                <DataGrid ItemsSource="{Binding Order.Lines}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Code" Binding="{Binding LabTest.Code}" Width="100"/>
+                        <DataGridTextColumn Header="Test / panel" Binding="{Binding LabTest.Name}" Width="*"/>
+                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="110"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="Payments">
+                <DataGrid ItemsSource="{Binding Order.Payments}" SelectedItem="{Binding SelectedPayment}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Receipt" Binding="{Binding ReceiptNo}" Width="130"/>
+                        <DataGridTextColumn Header="Date" Binding="{Binding PaidAt, Converter={StaticResource LocalDate}}" Width="150"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="90"/>
+                        <DataGridTextColumn Header="Method" Binding="{Binding PaymentMethod.Name}" Width="120"/>
+                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Reference / reason" Binding="{Binding Reason}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+            <TabItem Header="Samples">
+                <DataGrid ItemsSource="{Binding Samples}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130"/>
+                        <DataGridTextColumn Header="Specimen" Binding="{Binding Specimen}" Width="120"/>
+                        <DataGridTextColumn Header="Container" Binding="{Binding Container}" Width="150"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="150"/>
+                        <DataGridTextColumn Header="Tests" Binding="{Binding Tests}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="2" Orientation="Horizontal">
+            <Button Content="Receive payment" Style="{StaticResource PrimaryButton}" Command="{Binding PayCommand}" IsEnabled="{Binding CanPay}"/>
+            <Button Content="Refund" Command="{Binding RefundCommand}" IsEnabled="{Binding CanRefund}"/>
+            <Button Content="Receipt" Command="{Binding ReceiptCommand}"/>
+            <Button Content="Sample labels" Command="{Binding LabelsCommand}"/>
+            <Button Content="Report" Command="{Binding ReportCommand}" IsEnabled="{Binding CanReport}"/>
+            <Button Content="Cancel order" Style="{StaticResource DangerButton}" Command="{Binding CancelOrderCommand}" IsEnabled="{Binding CanCancel}"/>
+            <Button Content="Close" Command="{Binding CloseCommand}" IsCancel="True" HorizontalAlignment="Right"/>
+        </StackPanel>
+    </Grid>
+</c:DialogWindowBase>

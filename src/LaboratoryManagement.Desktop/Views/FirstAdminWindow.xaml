@@ -1,0 +1,19 @@
+<c:DialogWindowBase x:Class="LaboratoryManagement.Desktop.Views.FirstAdminWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common"
+        Title="First-time setup" Width="480" SizeToContent="Height" ResizeMode="NoResize" WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="26">
+        <TextBlock Text="Welcome" Style="{StaticResource PageTitle}"/>
+        <TextBlock TextWrapping="Wrap" Text="No administrator account exists yet. Create the first administrator. There is no default password: choose a strong one and keep it safe."/>
+        <TextBlock Text="Full name" Style="{StaticResource FieldLabel}"/>
+        <TextBox Text="{Binding FullName, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="Username" Style="{StaticResource FieldLabel}"/>
+        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
+        <TextBlock Text="Password (min 8 characters, letters and digits)" Style="{StaticResource FieldLabel}"/>
+        <PasswordBox x:Name="Pw1" PasswordChanged="Pw_Changed"/>
+        <TextBlock Text="Confirm password" Style="{StaticResource FieldLabel}"/>
+        <PasswordBox x:Name="Pw2" PasswordChanged="Pw_Changed"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Content="Create administrator" Style="{StaticResource PrimaryButton}" Command="{Binding CreateCommand}" IsDefault="True"/>
+            <Button Content="Exit" Command="{Binding CancelCommand}" Margin="0"/>
+        </StackPanel>
+    </StackPanel>
+</c:DialogWindowBase>

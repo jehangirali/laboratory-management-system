@@ -1,0 +1,24 @@
+<UserControl x:Class="LaboratoryManagement.Desktop.Views.PatientsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common" xmlns:ctl="clr-namespace:LaboratoryManagement.Desktop.Controls">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Patients" Style="{StaticResource PageTitle}"/>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBox Width="320" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="Search by patient ID, name, phone or CNIC" Margin="0,0,12,0"/>
+            <Button Content="New patient" Style="{StaticResource PrimaryButton}" Command="{Binding NewCommand}" IsEnabled="{Binding CanManage}"/>
+            <Button Content="Edit" Command="{Binding EditCommand}" IsEnabled="{Binding CanManage}"/>
+            <Button Content="History" Command="{Binding HistoryCommand}"/>
+            <Button Content="New order" Command="{Binding OrderCommand}" IsEnabled="{Binding CanOrder}"/>
+        </StackPanel>
+        <DataGrid ItemsSource="{Binding Patients}" SelectedItem="{Binding Selected}">
+            <DataGrid.InputBindings><MouseBinding MouseAction="LeftDoubleClick" Command="{Binding HistoryCommand}"/></DataGrid.InputBindings>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Patient ID" Binding="{Binding PatientNo}" Width="120"/>
+                <DataGridTextColumn Header="Name" Binding="{Binding FullName}" Width="*"/>
+                <DataGridTextColumn Header="Gender" Binding="{Binding Gender}" Width="80"/>
+                <DataGridTextColumn Header="Age" Binding="{Binding AgeText}" Width="70"/>
+                <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="130"/>
+                <DataGridTextColumn Header="CNIC" Binding="{Binding Cnic}" Width="140"/>
+                <DataGridTextColumn Header="Registered" Binding="{Binding RegisteredAt, Converter={StaticResource LocalDate}}" Width="150"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>

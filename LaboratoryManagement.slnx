@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LaboratoryManagement.Domain/LaboratoryManagement.Domain.csproj" />
+    <Project Path="src/LaboratoryManagement.Application/LaboratoryManagement.Application.csproj" />
+    <Project Path="src/LaboratoryManagement.Infrastructure/LaboratoryManagement.Infrastructure.csproj" />
+    <Project Path="src/LaboratoryManagement.Desktop/LaboratoryManagement.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LaboratoryManagement.UnitTests/LaboratoryManagement.UnitTests.csproj" />
+  </Folder>
+</Solution>

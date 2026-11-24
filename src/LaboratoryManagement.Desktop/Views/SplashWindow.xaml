@@ -1,0 +1,13 @@
+<Window x:Class="LaboratoryManagement.Desktop.Views.SplashWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common"
+        Width="460" Height="260" WindowStyle="None" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" Background="{StaticResource PrimaryBrush}" ShowInTaskbar="False">
+    <Grid Margin="30">
+        <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="LAB" FontSize="44" FontWeight="Black" Foreground="White"/>
+            <TextBlock Text="Laboratory Management System" FontSize="22" Foreground="White"/>
+            <TextBlock Text="Version 0.1.0 (demo)" Foreground="#CCFBF1" Margin="0,4,0,0"/>
+        </StackPanel>
+        <ProgressBar Grid.Row="1" IsIndeterminate="True" Height="6" Foreground="White" Background="#1B8A80" BorderThickness="0"/>
+        <TextBlock x:Name="StatusText" Grid.Row="2" Text="Starting..." Foreground="White" Margin="0,8,0,0"/>
+    </Grid>
+</Window>

@@ -1,0 +1,25 @@
+<UserControl x:Class="LaboratoryManagement.Desktop.Views.BackupView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:LaboratoryManagement.Desktop.Common" xmlns:ctl="clr-namespace:LaboratoryManagement.Desktop.Controls">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Backup &amp; restore" Style="{StaticResource PageTitle}"/>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <TextBlock Text="{Binding Folder, StringFormat=Backup folder: {0}  (change in Settings)}" Style="{StaticResource Muted}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button Content="Back up now" Style="{StaticResource PrimaryButton}" Command="{Binding BackupCommand}"/>
+                <Button Content="Verify selected" Command="{Binding VerifyCommand}"/>
+                <Button Content="Restore..." Style="{StaticResource DangerButton}" Command="{Binding RestoreCommand}"/>
+                <ProgressBar IsIndeterminate="True" Width="120" Height="8" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+            <TextBlock Text="Scheduled backups run while the application is open (enable in Settings: Backup.*). Store copies on a different disk/PC." Style="{StaticResource Muted}" Margin="0,8,0,0"/>
+        </StackPanel>
+        <DataGrid ItemsSource="{Binding History}" SelectedItem="{Binding Selected}">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="When" Binding="{Binding At, Converter={StaticResource LocalDate}}" Width="150"/>
+                <DataGridTextColumn Header="Kind" Binding="{Binding Kind}" Width="90"/>
+                <DataGridCheckBoxColumn Header="OK" Binding="{Binding Success, Mode=OneWay}" Width="45"/>
+                <DataGridTextColumn Header="Size (bytes)" Binding="{Binding SizeBytes, StringFormat=N0}" Width="110"/>
+                <DataGridTextColumn Header="File" Binding="{Binding FilePath}" Width="*"/>
+                <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="220"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</UserControl>
