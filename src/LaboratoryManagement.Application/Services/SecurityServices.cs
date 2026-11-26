@@ -73,48 +73,23 @@ public sealed class PasswordHasher : IPasswordHasher
     }
 }
 
-public sealed class AuditService : IAuditService
-{
-    private readonly IAppDbContextFactory _factory;
-    private readonly ICurrentUser _user;
-    public AuditService(IAppDbContextFactory factory, ICurrentUser user) { _factory = factory; _user = user; }
-
-    public void Add(IAppDbContext db, string action, string entityType, string? entityId, string? details = null)
-    {
-        db.AuditLogs.Add(new AuditLog
-        {
-            At = DateTime.UtcNow,
-            UserId = _user.IsAuthenticated ? _user.UserId : null,
-            Username = _user.IsAuthenticated ? _user.Username : "system",
-            Action = action,
-            EntityType = entityType,
-            EntityId = entityId,
-            Details = details is { Length: > 3900 } ? details[..3900] : details
-        });
-    }
-
-    public async Task LogAsync(string action, string entityType, string? entityId, string? details = null)
-    {
-        await using var db = _factory.Create();
-        Add(db, action, entityType, entityId, details);
-        await db.SaveChangesAsync();
-    }
-}
-
 public sealed class SettingsService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private Dictionary<string, string> _cache = new();
+    private bool _fullWorkflow;
 
-    public SettingsService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit)
-    { _factory = factory; _user = user; _audit = audit; }
+    public SettingsService(IAppDbContextFactory factory, ICurrentUser user)
+    { _factory = factory; _user = user; }
 
-    public async Task RefreshAsync()
+    public bool FullWorkflow => _fullWorkflow;
+
+    public async Task RefreshAsync(bool refreshWorkflow = true)
     {
         await using var db = _factory.Create();
         _cache = await db.AppSettings.AsNoTracking().ToDictionaryAsync(s => s.Key, s => s.Value);
+        if (refreshWorkflow) _fullWorkflow = GetBool(SettingKeys.FullWorkflowEnabled, false);
     }
 
     public string Get(string key, string fallback = "") => _cache.TryGetValue(key, out var v) ? v : fallback;
@@ -141,11 +116,10 @@ public sealed class SettingsService
         {
             if (!all.TryGetValue(s.Key, out var existing)) continue;
             if (existing.Value == s.Value) continue;
-            _audit.Add(db, "Setting changed", "AppSetting", s.Key, $"'{existing.Value}' -> '{s.Value}'");
             existing.Value = s.Value;
         }
         await db.SaveChangesAsync();
-        await RefreshAsync();
+        await RefreshAsync(refreshWorkflow: false);
     }
 
     public async Task SetInternalAsync(string key, string value)
@@ -156,6 +130,7 @@ public sealed class SettingsService
         s.Value = value;
         await db.SaveChangesAsync();
         _cache[key] = value;
+        if (key == SettingKeys.FullWorkflowEnabled) _fullWorkflow = bool.TryParse(value, out var enabled) && enabled;
     }
 }
 
@@ -164,12 +139,11 @@ public sealed class AuthService
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _current;
     private readonly IPasswordHasher _hasher;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
 
     public AuthService(IAppDbContextFactory factory, ICurrentUser current, IPasswordHasher hasher,
-                       IAuditService audit, SettingsService settings)
-    { _factory = factory; _current = current; _hasher = hasher; _audit = audit; _settings = settings; }
+                       SettingsService settings)
+    { _factory = factory; _current = current; _hasher = hasher; _settings = settings; }
 
     public async Task<bool> AdminExistsAsync()
     {
@@ -204,7 +178,6 @@ public sealed class AuthService
         };
         user.UserRoles.Add(new UserRole { Role = role });
         db.Users.Add(user);
-        db.AuditLogs.Add(new AuditLog { Username = "setup", Action = "First administrator created", EntityType = "User", EntityId = user.Username });
         await db.SaveChangesAsync();
     }
 
@@ -217,14 +190,10 @@ public sealed class AuthService
 
         if (user == null || !_hasher.Verify(password ?? "", user.PasswordHash))
         {
-            db.LoginHistory.Add(new LoginHistory { UserId = user?.Id, Username = uname, Event = "FailedLogin", MachineName = Environment.MachineName });
-            await db.SaveChangesAsync();
             return (false, "Invalid username or password.");
         }
         if (!user.IsActive)
         {
-            db.LoginHistory.Add(new LoginHistory { UserId = user.Id, Username = uname, Event = "FailedLogin", Details = "Account disabled", MachineName = Environment.MachineName });
-            await db.SaveChangesAsync();
             return (false, "This account is disabled. Please contact an administrator.");
         }
 
@@ -232,23 +201,17 @@ public sealed class AuthService
         var perms = await db.RolePermissions.Where(rp => roleIds.Contains(rp.RoleId))
             .Select(rp => rp.Permission.Code).Distinct().ToListAsync();
 
-        user.LastLoginAt = DateTime.UtcNow;
-        db.LoginHistory.Add(new LoginHistory { UserId = user.Id, Username = user.Username, Event = "Login", MachineName = Environment.MachineName });
-        await db.SaveChangesAsync();
-
         _current.Set(user.Id, user.Username, user.FullName, user.Designation, user.SignatureText,
                      user.UserRoles.Select(ur => ur.Role.Name), perms);
         await _settings.RefreshAsync();
         return (true, user.MustChangePassword ? "MUSTCHANGE" : "OK");
     }
 
-    public async Task LogoutAsync()
+    public Task LogoutAsync()
     {
-        if (!_current.IsAuthenticated) return;
-        await using var db = _factory.Create();
-        db.LoginHistory.Add(new LoginHistory { UserId = _current.UserId, Username = _current.Username, Event = "Logout", MachineName = Environment.MachineName });
-        await db.SaveChangesAsync();
+        if (!_current.IsAuthenticated) return Task.CompletedTask;
         _current.Clear();
+        return Task.CompletedTask;
     }
 
     public async Task ChangeOwnPasswordAsync(string currentPassword, string newPassword)
@@ -262,7 +225,6 @@ public sealed class AuthService
             throw new BusinessRuleException("Current password is incorrect.");
         user.PasswordHash = _hasher.Hash(newPassword);
         user.MustChangePassword = false;
-        _audit.Add(db, "Password changed", "User", user.Username);
         await db.SaveChangesAsync();
     }
 }
@@ -284,10 +246,9 @@ public sealed class UserService
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
     private readonly IPasswordHasher _hasher;
-    private readonly IAuditService _audit;
 
-    public UserService(IAppDbContextFactory factory, ICurrentUser user, IPasswordHasher hasher, IAuditService audit)
-    { _factory = factory; _user = user; _hasher = hasher; _audit = audit; }
+    public UserService(IAppDbContextFactory factory, ICurrentUser user, IPasswordHasher hasher)
+    { _factory = factory; _user = user; _hasher = hasher; }
 
     public async Task<List<User>> GetUsersAsync()
     {
@@ -344,7 +305,6 @@ public sealed class UserService
                 if (pwError != null) throw new BusinessRuleException(pwError);
                 user.PasswordHash = _hasher.Hash(dto.NewPassword);
                 user.MustChangePassword = true;
-                _audit.Add(db, "Password reset", "User", user.Username);
             }
         }
 
@@ -368,8 +328,6 @@ public sealed class UserService
         foreach (var rid in dto.RoleIds.Where(r => existing.All(x => x.RoleId != r)))
             user.UserRoles.Add(new UserRole { RoleId = rid });
 
-        _audit.Add(db, dto.Id is null ? "User created" : "User updated", "User", uname,
-                   $"Active={dto.IsActive}; Roles={string.Join(",", dto.RoleIds)}");
         await db.SaveChangesAsync();
     }
 
@@ -398,30 +356,6 @@ public sealed class UserService
         foreach (var rp in role.RolePermissions.Where(x => !wanted.Contains(x.PermissionId)).ToList()) role.RolePermissions.Remove(rp);
         foreach (var pid in wanted.Where(p => role.RolePermissions.All(x => x.PermissionId != p)))
             role.RolePermissions.Add(new RolePermission { PermissionId = pid });
-        _audit.Add(db, "Role permissions changed", "Role", role.Name, $"{wanted.Count} permissions");
         await db.SaveChangesAsync();
-    }
-
-    public async Task<List<LoginHistory>> GetLoginHistoryAsync(int take = 300)
-    {
-        _user.Require(Permissions.AuditView);
-        await using var db = _factory.Create();
-        return await db.LoginHistory.AsNoTracking().OrderByDescending(l => l.At).Take(take).ToListAsync();
-    }
-
-    public async Task<List<AuditLog>> GetAuditAsync(string? search, DateTime? fromLocal, DateTime? toLocal, int take = 500)
-    {
-        _user.Require(Permissions.AuditView);
-        await using var db = _factory.Create();
-        var q = db.AuditLogs.AsNoTracking().AsQueryable();
-        if (fromLocal != null) { var f = fromLocal.Value.Date.ToUniversalTime(); q = q.Where(a => a.At >= f); }
-        if (toLocal != null) { var t = toLocal.Value.Date.AddDays(1).ToUniversalTime(); q = q.Where(a => a.At < t); }
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.Trim();
-            q = q.Where(a => a.Action.Contains(s) || a.EntityType.Contains(s) || a.Username.Contains(s)
-                          || (a.EntityId != null && a.EntityId.Contains(s)) || (a.Details != null && a.Details.Contains(s)));
-        }
-        return await q.OrderByDescending(a => a.At).Take(take).ToListAsync();
     }
 }

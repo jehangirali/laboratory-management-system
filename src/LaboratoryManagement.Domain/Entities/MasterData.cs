@@ -12,7 +12,6 @@ public class NumberSequence
 {
     public string Key { get; set; } = string.Empty;
     public long LastValue { get; set; }
-    public byte[]? RowVersion { get; set; }
 }
 
 public class TestCategory : Entity
@@ -65,8 +64,6 @@ public class Patient : Entity
     public string? Cnic { get; set; }
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
     public bool IsActive { get; set; } = true;
-    public byte[]? RowVersion { get; set; }
-
     public int? AgeYears => DateOfBirth is null ? null : CalcAge(DateOfBirth.Value, DateTime.Today);
     public string AgeText
     {

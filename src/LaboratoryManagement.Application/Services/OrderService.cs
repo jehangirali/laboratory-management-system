@@ -8,11 +8,13 @@ namespace LaboratoryManagement.Application.Services;
 
 public class CreateOrderRequest
 {
-    public int PatientId { get; set; }
+    public int? PatientId { get; set; }
+    public string? PatientName { get; set; }
     public int? DoctorId { get; set; }
+    public string? DoctorName { get; set; }
     public List<int> TestIds { get; set; } = new();
-    public decimal Discount { get; set; }
-    public decimal InitialPayment { get; set; }
+    public long Discount { get; set; }
+    public long InitialPayment { get; set; }
     public int? PaymentMethodId { get; set; }
     public string? PaymentReference { get; set; }
     public string? Notes { get; set; }
@@ -22,8 +24,8 @@ public record CreateOrderResult(int OrderId, string OrderNo, int? PaymentId);
 
 public class OrderFilter
 {
-    public DateTime FromLocal { get; set; } = DateTime.Today;
-    public DateTime ToLocal { get; set; } = DateTime.Today;
+    public DateTime? FromLocal { get; set; }
+    public DateTime? ToLocal { get; set; }
     public string? Text { get; set; }
     public OrderStatus? Status { get; set; }
     public bool OnlyWithBalance { get; set; }
@@ -33,11 +35,10 @@ public sealed class OrderService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
 
-    public OrderService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, SettingsService settings)
-    { _factory = factory; _user = user; _audit = audit; _settings = settings; }
+    public OrderService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings)
+    { _factory = factory; _user = user; _settings = settings; }
 
     public static void Recalculate(LabOrder o, IEnumerable<Payment> payments)
     {
@@ -64,10 +65,59 @@ public sealed class OrderService
         return await Retry.RunAsync(async () =>
         {
             await using var db = _factory.Create();
-            var patient = await db.Patients.FirstOrDefaultAsync(p => p.Id == req.PatientId && p.IsActive)
-                          ?? throw new BusinessRuleException("Select a patient.");
-            if (req.DoctorId != null && !await db.Doctors.AnyAsync(d => d.Id == req.DoctorId && d.IsActive))
-                throw new BusinessRuleException("The selected doctor is not available.");
+            Patient? patient;
+            if (req.PatientId.HasValue)
+            {
+                patient = await db.Patients.FirstOrDefaultAsync(p => p.Id == req.PatientId.Value && p.IsActive)
+                          ?? throw new BusinessRuleException("Select an active patient.");
+            }
+            else
+            {
+                var patientName = req.PatientName?.Trim();
+                if (string.IsNullOrWhiteSpace(patientName)) throw new BusinessRuleException("Enter a patient name.");
+                var normalizedPatientName = patientName.ToLowerInvariant();
+                patient = await db.Patients.Where(p => p.IsActive
+                        && (p.FullName.ToLower() == normalizedPatientName || p.PatientNo.ToLower() == normalizedPatientName
+                            || p.Phone == patientName || p.Cnic == patientName))
+                    .OrderByDescending(p => p.RegisteredAt).FirstOrDefaultAsync();
+                if (patient == null)
+                {
+                    _user.Require(Permissions.PatientsManage);
+                    var patientNo = await NumberGenerator.NextAsync(db, "PATIENT");
+                    patient = new Patient
+                    {
+                        PatientNo = $"{_settings.Get(SettingKeys.PrefixPatient, "P")}-{patientNo:D6}",
+                        FullName = patientName, Gender = Gender.Other, RegisteredAt = DateTime.UtcNow
+                    };
+                    db.Patients.Add(patient);
+                }
+            }
+            var resolvedPatient = patient ?? throw new BusinessRuleException("Enter a patient name.");
+
+            Doctor? doctor = null;
+            if (req.DoctorId.HasValue)
+            {
+                doctor = await db.Doctors.FirstOrDefaultAsync(d => d.Id == req.DoctorId.Value && d.IsActive)
+                         ?? throw new BusinessRuleException("The selected doctor is not available.");
+            }
+            else if (!string.IsNullOrWhiteSpace(req.DoctorName))
+            {
+                var doctorName = req.DoctorName.Trim();
+                var normalizedDoctorName = doctorName.ToLowerInvariant();
+                doctor = await db.Doctors.Where(d => d.IsActive
+                        && (d.Name.ToLower() == normalizedDoctorName || d.DoctorNo.ToLower() == normalizedDoctorName))
+                    .OrderBy(d => d.Name).FirstOrDefaultAsync();
+                if (doctor == null)
+                {
+                    var doctorNo = await NumberGenerator.NextAsync(db, "DOCTOR");
+                    doctor = new Doctor
+                    {
+                        DoctorNo = $"{_settings.Get(SettingKeys.PrefixDoctor, "DR")}-{doctorNo:D4}",
+                        Name = doctorName, IsActive = true
+                    };
+                    db.Doctors.Add(doctor);
+                }
+            }
 
             var ids = req.TestIds.Distinct().ToList();
             var selected = await db.LabTests
@@ -103,12 +153,14 @@ public sealed class OrderService
             if (req.InitialPayment > net) throw new BusinessRuleException("Payment cannot exceed the net amount.");
 
             var now = DateTime.UtcNow;
+            var fullWorkflow = _settings.FullWorkflow;
             var localDay = TimeHelper.ToLocal(now).ToString("yyyyMMdd");
             var seq = await NumberGenerator.NextAsync(db, $"ORDER-{localDay}");
             var order = new LabOrder
             {
                 OrderNo = $"{_settings.Get(SettingKeys.PrefixOrder, "ORD")}-{localDay}-{seq:D4}",
-                PatientId = patient.Id, DoctorId = req.DoctorId, OrderedAt = now, Subtotal = subtotal, Discount = req.Discount,
+                PatientId = resolvedPatient.Id, Patient = resolvedPatient, DoctorId = doctor?.Id, Doctor = doctor,
+                OrderedAt = now, Subtotal = subtotal, Discount = req.Discount,
                 NetAmount = net, Notes = req.Notes, CreatedByUserId = _user.UserId, Status = OrderStatus.Registered
             };
             db.Orders.Add(order);
@@ -136,7 +188,12 @@ public sealed class OrderService
                         sample = new Sample
                         {
                             Barcode = $"{bcDay}{bseq:D5}", SpecimenTypeId = test.SpecimenTypeId, ContainerId = test.ContainerId,
-                            Status = SampleStatus.PendingCollection, CreatedAt = now
+                            Status = fullWorkflow ? SampleStatus.PendingCollection : SampleStatus.ReceivedInLab,
+                            CollectedAt = fullWorkflow ? null : now,
+                            ReceivedAt = fullWorkflow ? null : now,
+                            CollectedByUserId = fullWorkflow ? null : _user.UserId,
+                            ReceivedByUserId = fullWorkflow ? null : _user.UserId,
+                            CreatedAt = now
                         };
                         order.Samples.Add(sample);
                         samples[key] = sample;
@@ -154,14 +211,12 @@ public sealed class OrderService
             }
             Recalculate(order, order.Payments);
 
-            _audit.Add(db, "Order created", "LabOrder", order.OrderNo,
-                       $"Patient={patient.PatientNo}; Tests={string.Join(",", selected.Select(t => t.Code))}; Subtotal={subtotal:0.00}; Discount={req.Discount:0.00}; Paid={req.InitialPayment:0.00}");
             await db.SaveChangesAsync();
             return new CreateOrderResult(order.Id, order.OrderNo, payment?.Id);
         });
     }
 
-    private async Task<Payment> NewPaymentAsync(IAppDbContext db, LabOrder order, decimal amount, PaymentType type, int methodId, string? reference, string? reason)
+    private async Task<Payment> NewPaymentAsync(IAppDbContext db, LabOrder order, long amount, PaymentType type, int methodId, string? reference, string? reason)
     {
         var n = await NumberGenerator.NextAsync(db, "RECEIPT");
         var p = new Payment
@@ -171,12 +226,10 @@ public sealed class OrderService
             ReceivedByUserId = _user.UserId, Reference = reference, Reason = reason
         };
         order.Payments.Add(p);
-        _audit.Add(db, type == PaymentType.Payment ? "Payment received" : "Refund issued", "Payment", p.ReceiptNo,
-                   $"Order={order.OrderNo}; Amount={amount:0.00}; Reason={reason}");
         return p;
     }
 
-    public async Task<int> AddPaymentAsync(int orderId, decimal amount, int methodId, string? reference)
+    public async Task<int> AddPaymentAsync(int orderId, long amount, int methodId, string? reference)
     {
         _user.Require(Permissions.PaymentsReceive);
         if (amount <= 0) throw new BusinessRuleException("Enter a payment amount greater than zero.");
@@ -185,7 +238,7 @@ public sealed class OrderService
             await using var db = _factory.Create();
             var o = await db.Orders.Include(x => x.Payments).FirstAsync(x => x.Id == orderId);
             if (o.Status == OrderStatus.Cancelled) throw new BusinessRuleException("This order is cancelled.");
-            if (amount > o.Balance) throw new BusinessRuleException($"Amount exceeds the outstanding balance ({o.Balance:0.00}).");
+            if (amount > o.Balance) throw new BusinessRuleException($"Amount exceeds the outstanding balance ({o.Balance:N0}).");
             var p = await NewPaymentAsync(db, o, amount, PaymentType.Payment, methodId, reference, null);
             Recalculate(o, o.Payments);
             await db.SaveChangesAsync();
@@ -193,7 +246,7 @@ public sealed class OrderService
         });
     }
 
-    public async Task<int> RefundAsync(int orderId, decimal amount, int methodId, string reason)
+    public async Task<int> RefundAsync(int orderId, long amount, int methodId, string reason)
     {
         _user.Require(Permissions.OrdersRefund);
         if (string.IsNullOrWhiteSpace(reason)) throw new BusinessRuleException("A reason is required for a refund.");
@@ -202,7 +255,7 @@ public sealed class OrderService
         {
             await using var db = _factory.Create();
             var o = await db.Orders.Include(x => x.Payments).FirstAsync(x => x.Id == orderId);
-            if (amount > o.PaidAmount) throw new BusinessRuleException($"Refund exceeds the amount paid ({o.PaidAmount:0.00}).");
+            if (amount > o.PaidAmount) throw new BusinessRuleException($"Refund exceeds the amount paid ({o.PaidAmount:N0}).");
             var p = await NewPaymentAsync(db, o, amount, PaymentType.Refund, methodId, null, reason.Trim());
             Recalculate(o, o.Payments);
             await db.SaveChangesAsync();
@@ -223,7 +276,6 @@ public sealed class OrderService
         o.Status = OrderStatus.Cancelled; o.CancelReason = reason.Trim(); o.CancelledAt = DateTime.UtcNow; o.CancelledByUserId = _user.UserId;
         foreach (var t in o.Tests) t.Status = OrderTestStatus.Cancelled;
         if (o.Report != null) o.Report.Status = ReportStatus.Pending;
-        _audit.Add(db, "Order cancelled", "LabOrder", o.OrderNo, $"Reason: {reason}; Paid={o.PaidAmount:0.00} (refund separately if required)");
         await db.SaveChangesAsync();
     }
 
@@ -231,9 +283,18 @@ public sealed class OrderService
     {
         _user.Require(Permissions.OrdersView);
         await using var db = _factory.Create();
-        var (from, to) = TimeHelper.LocalDayRangeUtc(f.FromLocal, f.ToLocal);
         var q = db.Orders.AsNoTracking().Include(o => o.Patient).Include(o => o.Doctor).Include(o => o.Report)
-            .Where(o => o.OrderedAt >= from && o.OrderedAt < to);
+            .AsQueryable();
+        if (f.FromLocal.HasValue)
+        {
+            var (from, _) = TimeHelper.LocalDayRangeUtc(f.FromLocal.Value, f.FromLocal.Value);
+            q = q.Where(o => o.OrderedAt >= from);
+        }
+        if (f.ToLocal.HasValue)
+        {
+            var (_, to) = TimeHelper.LocalDayRangeUtc(f.ToLocal.Value, f.ToLocal.Value);
+            q = q.Where(o => o.OrderedAt < to);
+        }
         if (f.Status != null) q = q.Where(o => o.Status == f.Status);
         if (f.OnlyWithBalance) q = q.Where(o => o.Balance > 0 && o.Status != OrderStatus.Cancelled);
         if (!string.IsNullOrWhiteSpace(f.Text))
@@ -242,7 +303,7 @@ public sealed class OrderService
             q = q.Where(o => o.OrderNo.Contains(s) || o.Patient.FullName.Contains(s) || o.Patient.PatientNo.Contains(s)
                           || (o.Patient.Phone != null && o.Patient.Phone.Contains(s)) || o.Samples.Any(x => x.Barcode == s));
         }
-        return await q.OrderByDescending(o => o.OrderedAt).Take(500).ToListAsync();
+        return await q.OrderByDescending(o => o.OrderedAt).ToListAsync();
     }
 
     public async Task<LabOrder> GetDetailAsync(int orderId)

@@ -12,8 +12,6 @@ public interface IAppDbContext : IDisposable, IAsyncDisposable
     DbSet<RolePermission> RolePermissions { get; }
     DbSet<User> Users { get; }
     DbSet<UserRole> UserRoles { get; }
-    DbSet<LoginHistory> LoginHistory { get; }
-    DbSet<AuditLog> AuditLogs { get; }
     DbSet<AppSetting> AppSettings { get; }
     DbSet<NumberSequence> NumberSequences { get; }
     DbSet<TestCategory> TestCategories { get; }
@@ -35,7 +33,6 @@ public interface IAppDbContext : IDisposable, IAsyncDisposable
     DbSet<ResultValue> ResultValues { get; }
     DbSet<ResultRevision> ResultRevisions { get; }
     DbSet<Report> Reports { get; }
-    DbSet<ReportVersion> ReportVersions { get; }
     DbSet<BackupRecord> BackupRecords { get; }
 
     DatabaseFacade Database { get; }
@@ -70,13 +67,6 @@ public interface IPasswordHasher
 {
     string Hash(string password);
     bool Verify(string password, string hash);
-}
-
-public interface IAuditService
-{
-    /// <summary>Adds an audit row to the supplied context (saved together with the business change).</summary>
-    void Add(IAppDbContext db, string action, string entityType, string? entityId, string? details = null);
-    Task LogAsync(string action, string entityType, string? entityId, string? details = null);
 }
 
 public interface IBackupService

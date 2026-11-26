@@ -14,14 +14,12 @@ public class LabTest : Entity
     public SampleContainer? Container { get; set; }
     public string? Instructions { get; set; }
     public int TurnaroundHours { get; set; } = 24;
-    public decimal Price { get; set; }
+    public long Price { get; set; }
     /// <summary>True while the price is a seeded/demo sample price that an administrator has not reviewed.</summary>
     public bool PriceIsSample { get; set; }
     public string? Method { get; set; }
     public bool IsPanel { get; set; }
     public bool IsActive { get; set; } = true;
-    public byte[]? RowVersion { get; set; }
-
     public ICollection<TestParameter> Parameters { get; set; } = new List<TestParameter>();
     /// <summary>When this test is a panel: its components.</summary>
     public ICollection<PanelItem> PanelItems { get; set; } = new List<PanelItem>();

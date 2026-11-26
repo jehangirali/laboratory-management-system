@@ -13,7 +13,7 @@ namespace LaboratoryManagement.Desktop.ViewModels;
 
 public record LookupItem(int? Id, string Name);
 public record GenderOption(Gender? Value, string Name);
-public record PaymentRequest(decimal Amount, int MethodId, string? Text);
+public record PaymentRequest(long Amount, int MethodId, string? Text);
 
 public sealed class PromptViewModel : DialogViewModel
 {
@@ -86,7 +86,7 @@ public sealed class PaymentDialogViewModel : DialogViewModel
     public string Title { get; set; } = "Payment";
     public string Caption { get; set; } = "";
     public bool IsRefund { get; set; }
-    public decimal MaxAmount { get; set; }
+    public long MaxAmount { get; set; }
     private string _amount = ""; public string Amount { get => _amount; set => Set(ref _amount, value); }
     private string _text = ""; public string Text { get => _text; set => Set(ref _text, value); }
     public string TextLabel => IsRefund ? "Reason for refund (required)" : "Reference (optional)";
@@ -103,8 +103,8 @@ public sealed class PaymentDialogViewModel : DialogViewModel
 
     public ICommand OkCommand => new RelayCommand(() =>
     {
-        if (!decimal.TryParse(Amount, NumberStyles.Number, CultureInfo.CurrentCulture, out var a) || a <= 0) { Ui.Warning("Enter a valid amount."); return; }
-        if (a > MaxAmount) { Ui.Warning($"Amount cannot exceed {MaxAmount:N2}."); return; }
+        if (!MoneyParser.TryParseWholeRupees(Amount, CultureInfo.CurrentCulture, out var a) || a <= 0) { Ui.Warning("Enter a whole-rupee amount without decimals."); return; }
+        if (a > MaxAmount) { Ui.Warning($"Amount cannot exceed {MaxAmount:N0}."); return; }
         if (Method == null) { Ui.Warning("Select a payment method."); return; }
         if (IsRefund && string.IsNullOrWhiteSpace(Text)) { Ui.Warning("A reason is required for a refund."); return; }
         Result = new PaymentRequest(a, Method.Id, Text);
@@ -221,7 +221,8 @@ public sealed class DoctorEditorViewModel : DialogViewModel
 
     public ICommand SaveCommand => new AsyncRelayCommand(async () =>
     {
-        decimal.TryParse(CommissionValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var cv);
+        if (!decimal.TryParse(CommissionValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var cv))
+            throw new BusinessRuleException("Enter a valid commission value.");
         Saved = await _doctors.SaveAsync(new Doctor
         {
             Id = Id, Name = Name, Specialization = Specialization, ClinicOrHospital = Clinic, Contact = Contact, Address = Address,
@@ -335,7 +336,7 @@ public sealed class TestEditorViewModel : DialogViewModel
             var t = await _catalog.GetAsync(id.Value);
             _id = t.Id; _isPanel = t.IsPanel; _priceIsSample = t.PriceIsSample;
             Code = t.Code; Name = t.Name; CategoryId = t.CategoryId; SpecimenTypeId = t.SpecimenTypeId; ContainerId = t.ContainerId;
-            Instructions = t.Instructions; Tat = t.TurnaroundHours.ToString(); Price = t.Price.ToString("0.##", CultureInfo.InvariantCulture);
+            Instructions = t.Instructions; Tat = t.TurnaroundHours.ToString(); Price = t.Price.ToString(CultureInfo.InvariantCulture);
             Method = t.Method; IsActive = t.IsActive;
             foreach (var p in t.Parameters) { Parameters.Add(p); _ranges[p] = new ObservableCollection<ReferenceRangeDto>(p.Ranges); }
             foreach (var cid in t.ComponentTestIds)
@@ -371,7 +372,7 @@ public sealed class TestEditorViewModel : DialogViewModel
 
     public ICommand SaveCommand => new AsyncRelayCommand(async () =>
     {
-        if (!decimal.TryParse(Price, NumberStyles.Number, CultureInfo.InvariantCulture, out var price)) throw new BusinessRuleException("Enter a valid price.");
+        if (!MoneyParser.TryParseWholeRupees(Price, CultureInfo.InvariantCulture, out var price)) throw new BusinessRuleException("Enter a whole-rupee price without decimals.");
         if (!int.TryParse(Tat, out var tat)) throw new BusinessRuleException("Turnaround time must be a whole number of hours.");
         foreach (var p in Parameters) p.Ranges = _ranges[p].ToList();
         var dto = new TestEditDto
@@ -391,8 +392,9 @@ public sealed class OrderDetailViewModel : DialogViewModel
     private readonly SampleService _samples;
     private readonly ICurrentUser _user;
     private readonly IDialogService _dialogs;
-    public OrderDetailViewModel(OrderService orders, SampleService samples, ICurrentUser user, IDialogService dialogs)
-    { _orders = orders; _samples = samples; _user = user; _dialogs = dialogs; }
+    private readonly SettingsService _settings;
+    public OrderDetailViewModel(OrderService orders, SampleService samples, ICurrentUser user, IDialogService dialogs, SettingsService settings)
+    { _orders = orders; _samples = samples; _user = user; _dialogs = dialogs; _settings = settings; }
 
     private int _orderId;
     private LabOrder? _order;
@@ -402,6 +404,7 @@ public sealed class OrderDetailViewModel : DialogViewModel
     public bool CanPay => _user.Has(Permissions.PaymentsReceive) && Order is { Status: not OrderStatus.Cancelled, Balance: > 0 };
     public bool CanRefund => _user.Has(Permissions.OrdersRefund) && Order is { PaidAmount: > 0 };
     public bool CanCancel => _user.Has(Permissions.OrdersCancel) && Order is { Status: not OrderStatus.Cancelled };
+    public bool ShowSampleWorkflow => _settings.FullWorkflow;
     public bool CanReport => _user.Has(Permissions.ReportsPrint) || _user.Has(Permissions.ResultsVerify);
 
     public async Task InitAsync(int orderId) { _orderId = orderId; await ReloadAsync(); }

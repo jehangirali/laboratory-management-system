@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LaboratoryManagement.Application.Services;
 
 public record DashboardCard(string Title, string Value, string? Hint = null);
-public record ChartPoint(string Label, decimal Value);
+public record ChartPoint(string Label, long Value);
 
 public class DashboardData
 {
@@ -45,13 +45,13 @@ public sealed class DashboardService
             d.Cards.Add(new("Today's patients", (await db.Patients.CountAsync(p => p.RegisteredAt >= todayStart && p.RegisteredAt < todayEnd)).ToString()));
         if (canOrders)
             d.Cards.Add(new("Today's orders", (await db.Orders.CountAsync(o => o.OrderedAt >= todayStart && o.OrderedAt < todayEnd && o.Status != OrderStatus.Cancelled)).ToString()));
-        if (_user.Has(Permissions.SamplesManage))
+        if (_settings.FullWorkflow && _user.Has(Permissions.SamplesManage))
             d.Cards.Add(new("Pending samples", (await db.Samples.CountAsync(s => (s.Status == SampleStatus.PendingCollection || s.Status == SampleStatus.Collected)
                 && s.Order.Status != OrderStatus.Cancelled)).ToString(), "Awaiting collection / receipt"));
         if (_user.Has(Permissions.ResultsEnter))
             d.Cards.Add(new("Tests in progress", (await db.OrderTests.CountAsync(t => (t.Status == OrderTestStatus.Pending || t.Status == OrderTestStatus.InProgress)
                 && t.Order.Status != OrderStatus.Cancelled)).ToString()));
-        if (_user.Has(Permissions.ResultsVerify) || _user.Has(Permissions.ResultsEnter))
+        if (_settings.FullWorkflow && (_user.Has(Permissions.ResultsVerify) || _user.Has(Permissions.ResultsEnter)))
             d.Cards.Add(new("Awaiting verification", (await db.Reports.CountAsync(r => r.Status == ReportStatus.ReadyForVerification)).ToString()));
         if (canOrders)
             d.Cards.Add(new("Completed reports", (await db.Reports.CountAsync(r => r.Status == ReportStatus.Verified || r.Status == ReportStatus.Printed)).ToString()));
@@ -60,7 +60,7 @@ public sealed class DashboardService
             var collected = await db.Payments.Where(p => p.PaidAt >= todayStart && p.PaidAt < todayEnd)
                 .SumAsync(p => p.Type == PaymentType.Payment ? p.Amount : -p.Amount);
             d.Cards.Add(new("Today's collections", $"{cur} {collected:N0}", "Payments less refunds"));
-            var outstanding = await db.Orders.Where(o => o.Status != OrderStatus.Cancelled && o.Balance > 0).SumAsync(o => (decimal?)o.Balance) ?? 0;
+            var outstanding = await db.Orders.Where(o => o.Status != OrderStatus.Cancelled && o.Balance > 0).SumAsync(o => (long?)o.Balance) ?? 0;
             d.Cards.Add(new("Outstanding balances", $"{cur} {outstanding:N0}"));
         }
 
@@ -128,7 +128,8 @@ public sealed class OperationalReportService
     public OperationalReportService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings)
     { _factory = factory; _user = user; _settings = settings; }
 
-    public IEnumerable<OperationalReportInfo> Available() => Reports.Where(r => _user.Has(r.Permission));
+    public IEnumerable<OperationalReportInfo> Available() => Reports.Where(r =>
+        _user.Has(r.Permission) && (_settings.FullWorkflow || r.Code != "pending-samples"));
 
     public async Task<DataTable> RunAsync(string code, DateTime fromLocal, DateTime toLocal)
     {
@@ -204,16 +205,16 @@ public sealed class OperationalReportService
                     var doc = g.First().Doctor!;
                     var net = g.Sum(o => o.NetAmount);
                     if (!enabled) { t.Rows.Add(doc.Name, doc.DoctorNo, g.Count(), net); continue; }
-                    decimal comm = doc.CommissionType switch
+                    long comm = doc.CommissionType switch
                     {
-                        CommissionType.Percentage => Math.Round(net * doc.CommissionValue / 100m, 2),
-                        CommissionType.Fixed => doc.CommissionValue * g.Count(),
-                        _ => 0m
+                        CommissionType.Percentage => checked((long)Math.Round(net * doc.CommissionValue / 100m, MidpointRounding.AwayFromZero)),
+                        CommissionType.Fixed => checked((long)Math.Round(doc.CommissionValue * g.Count(), MidpointRounding.AwayFromZero)),
+                        _ => 0L
                     };
                     var rule = doc.CommissionType switch
                     {
                         CommissionType.Percentage => $"{doc.CommissionValue:0.##}% of net",
-                        CommissionType.Fixed => $"{doc.CommissionValue:0.##} per order",
+                        CommissionType.Fixed => $"{doc.CommissionValue:N0} per order",
                         _ => "None"
                     };
                     t.Rows.Add(doc.Name, doc.DoctorNo, g.Count(), net, rule, comm);

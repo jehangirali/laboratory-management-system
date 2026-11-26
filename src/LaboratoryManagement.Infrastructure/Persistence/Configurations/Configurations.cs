@@ -59,31 +59,6 @@ public class UserRoleConfig : IEntityTypeConfiguration<UserRole>
     }
 }
 
-public class LoginHistoryConfig : IEntityTypeConfiguration<LoginHistory>
-{
-    public void Configure(EntityTypeBuilder<LoginHistory> b)
-    {
-        b.HasIndex(x => x.At);
-        b.Property(x => x.Username).HasMaxLength(100);
-        b.Property(x => x.Event).HasMaxLength(50);
-        b.Property(x => x.Details).HasMaxLength(500);
-    }
-}
-
-public class AuditLogConfig : IEntityTypeConfiguration<AuditLog>
-{
-    public void Configure(EntityTypeBuilder<AuditLog> b)
-    {
-        b.HasIndex(x => x.At);
-        b.HasIndex(x => new { x.EntityType, x.EntityId });
-        b.Property(x => x.Username).HasMaxLength(100);
-        b.Property(x => x.Action).HasMaxLength(200);
-        b.Property(x => x.EntityType).HasMaxLength(100);
-        b.Property(x => x.EntityId).HasMaxLength(100);
-        b.Property(x => x.Details).HasMaxLength(4000);
-    }
-}
-
 // ---- Master data ----
 public class AppSettingConfig : IEntityTypeConfiguration<AppSetting>
 {
@@ -103,7 +78,6 @@ public class NumberSequenceConfig : IEntityTypeConfiguration<NumberSequence>
     {
         b.HasKey(x => x.Key);
         b.Property(x => x.Key).HasMaxLength(100);
-        b.Property(x => x.RowVersion).IsRowVersion();
     }
 }
 
@@ -139,13 +113,11 @@ public class PatientConfig : IEntityTypeConfiguration<Patient>
         b.Property(x => x.PatientNo).IsRequired().HasMaxLength(30);
         b.Property(x => x.FullName).IsRequired().HasMaxLength(200);
         b.Property(x => x.FatherOrHusbandName).HasMaxLength(200);
-        b.Property(x => x.DateOfBirth).HasColumnType("date");
         b.Property(x => x.Phone).HasMaxLength(30);
         b.Property(x => x.WhatsApp).HasMaxLength(30);
         b.Property(x => x.Address).HasMaxLength(500);
         b.Property(x => x.Email).HasMaxLength(200);
         b.Property(x => x.Cnic).HasMaxLength(20);
-        b.Property(x => x.RowVersion).IsRowVersion();
     }
 }
 
@@ -175,7 +147,6 @@ public class LabTestConfig : IEntityTypeConfiguration<LabTest>
         b.Property(x => x.Name).IsRequired().HasMaxLength(200);
         b.Property(x => x.Instructions).HasMaxLength(1000);
         b.Property(x => x.Method).HasMaxLength(150);
-        b.Property(x => x.RowVersion).IsRowVersion();
         b.HasOne(x => x.Category).WithMany().HasForeignKey(x => x.CategoryId);
         b.HasOne(x => x.SpecimenType).WithMany().HasForeignKey(x => x.SpecimenTypeId);
         b.HasOne(x => x.Container).WithMany().HasForeignKey(x => x.ContainerId);
@@ -232,7 +203,6 @@ public class LabOrderConfig : IEntityTypeConfiguration<LabOrder>
         b.Property(x => x.OrderNo).IsRequired().HasMaxLength(40);
         b.Property(x => x.Notes).HasMaxLength(1000);
         b.Property(x => x.CancelReason).HasMaxLength(500);
-        b.Property(x => x.RowVersion).IsRowVersion();
         b.HasOne(x => x.Patient).WithMany().HasForeignKey(x => x.PatientId);
         b.HasOne(x => x.Doctor).WithMany().HasForeignKey(x => x.DoctorId);
         b.HasOne(x => x.Report).WithOne(r => r.Order).HasForeignKey<Report>(r => r.OrderId);
@@ -298,7 +268,6 @@ public class ResultValueConfig : IEntityTypeConfiguration<ResultValue>
         b.Property(x => x.Unit).HasMaxLength(50);
         b.Property(x => x.ReferenceText).HasMaxLength(300);
         b.Property(x => x.Comment).HasMaxLength(1000);
-        b.Property(x => x.RowVersion).IsRowVersion();
         b.HasOne(x => x.OrderTest).WithMany(t => t.Results).HasForeignKey(x => x.OrderTestId);
         b.HasOne(x => x.TestParameter).WithMany().HasForeignKey(x => x.TestParameterId);
     }
@@ -327,19 +296,6 @@ public class ReportConfig : IEntityTypeConfiguration<Report>
         b.Property(x => x.VerifierDesignation).HasMaxLength(200);
         b.Property(x => x.VerifierRoles).HasMaxLength(300);
         b.Property(x => x.SignatureText).HasMaxLength(300);
-    }
-}
-
-public class ReportVersionConfig : IEntityTypeConfiguration<ReportVersion>
-{
-    public void Configure(EntityTypeBuilder<ReportVersion> b)
-    {
-        b.HasIndex(x => new { x.ReportId, x.VersionNo }).IsUnique();
-        b.Property(x => x.SnapshotJson).IsRequired(); // nvarchar(max): overrides the 256 default via explicit max length below
-        b.Property(x => x.SnapshotJson).HasColumnType("nvarchar(max)");
-        b.Property(x => x.Reason).HasMaxLength(500);
-        b.Property(x => x.CreatedByName).HasMaxLength(200);
-        b.HasOne(x => x.Report).WithMany(r => r.Versions).HasForeignKey(x => x.ReportId);
     }
 }
 

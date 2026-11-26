@@ -22,14 +22,12 @@ public sealed class TestEnv
 {
     public TestFactory Factory { get; } = new();
     public CurrentUser User { get; } = new();
-    public IAuditService Audit { get; }
     public SettingsService Settings { get; }
     public DataSeeder Seeder { get; }
 
     public TestEnv()
     {
-        Audit = new AuditService(Factory, User);
-        Settings = new SettingsService(Factory, User, Audit);
+        Settings = new SettingsService(Factory, User);
         Seeder = new DataSeeder(Factory, AllSeeders(), NullLogger<DataSeeder>.Instance);
     }
 
@@ -49,7 +47,7 @@ public sealed class TestEnv
         return env;
     }
 
-    public async Task SetPricesAsync(decimal price)
+    public async Task SetPricesAsync(long price)
     {
         await using var db = Factory.Create();
         foreach (var t in await db.LabTests.ToListAsync()) { t.Price = price; }

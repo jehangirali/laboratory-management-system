@@ -8,6 +8,11 @@
             <Button Content="Load demo data..." Command="{Binding DemoCommand}"/>
             <Button Content="Change my password" Command="{Binding PasswordCommand}"/>
         </WrapPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <CheckBox Content="Use full workflow: sample collection, lab receipt and result verification"
+                      IsChecked="{Binding FullWorkflowEnabled, UpdateSourceTrigger=PropertyChanged}" FontWeight="SemiBold"/>
+            <TextBlock Text="Workflow changes apply after you sign out and sign in again." Style="{StaticResource Muted}" Margin="22,3,0,0"/>
+        </StackPanel>
         <DataGrid ItemsSource="{Binding Settings}" IsReadOnly="False" SelectedItem="{Binding Selected}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Group" Binding="{Binding Group}" IsReadOnly="True" Width="110"/>

@@ -10,11 +10,10 @@ public sealed class PatientService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
 
-    public PatientService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, SettingsService settings)
-    { _factory = factory; _user = user; _audit = audit; _settings = settings; }
+    public PatientService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings)
+    { _factory = factory; _user = user; _settings = settings; }
 
     public async Task<List<Patient>> SearchAsync(string? text, int take = 100)
     {
@@ -84,7 +83,6 @@ public sealed class PatientService
             }
             else p = await db.Patients.FirstAsync(x => x.Id == dto.Id);
 
-            var before = dto.Id == 0 ? null : $"{p.FullName}|{p.Phone}|{p.Cnic}|{p.DateOfBirth:d}";
             p.FullName = dto.FullName.Trim();
             p.FatherOrHusbandName = dto.FatherOrHusbandName?.Trim();
             p.Gender = dto.Gender;
@@ -94,9 +92,6 @@ public sealed class PatientService
             p.Address = dto.Address?.Trim();
             p.Email = dto.Email?.Trim();
             p.Cnic = dto.Cnic?.Trim();
-            await db.SaveChangesAsync();
-            _audit.Add(db, dto.Id == 0 ? "Patient created" : "Patient updated", "Patient", p.PatientNo,
-                       before == null ? p.FullName : $"Before: {before}; After: {p.FullName}|{p.Phone}|{p.Cnic}|{p.DateOfBirth:d}");
             await db.SaveChangesAsync();
             return p;
         });
@@ -116,11 +111,10 @@ public sealed class DoctorService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
 
-    public DoctorService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, SettingsService settings)
-    { _factory = factory; _user = user; _audit = audit; _settings = settings; }
+    public DoctorService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings)
+    { _factory = factory; _user = user; _settings = settings; }
 
     public async Task<List<Doctor>> SearchAsync(string? text, bool includeInactive = false, int take = 100)
     {
@@ -151,6 +145,8 @@ public sealed class DoctorService
         if (string.IsNullOrWhiteSpace(dto.Name)) throw new BusinessRuleException("Doctor name is required.");
         if (dto.CommissionType == CommissionType.Percentage && (dto.CommissionValue < 0 || dto.CommissionValue > 100))
             throw new BusinessRuleException("Commission percentage must be between 0 and 100.");
+        if (dto.CommissionType == CommissionType.Fixed && (dto.CommissionValue < 0 || decimal.Truncate(dto.CommissionValue) != dto.CommissionValue))
+            throw new BusinessRuleException("A fixed commission must be a non-negative whole-rupee amount.");
 
         return await Retry.RunAsync(async () =>
         {
@@ -176,7 +172,6 @@ public sealed class DoctorService
                 d.CommissionValue = dto.CommissionType == CommissionType.None ? 0 : dto.CommissionValue;
             }
             await db.SaveChangesAsync();
-            _audit.Add(db, dto.Id == 0 ? "Doctor created" : "Doctor updated", "Doctor", d.DoctorNo, d.Name);
             await db.SaveChangesAsync();
             return d;
         });
@@ -222,7 +217,7 @@ public class TestEditDto
     public int? ContainerId { get; set; }
     public string? Instructions { get; set; }
     public int TurnaroundHours { get; set; } = 24;
-    public decimal Price { get; set; }
+    public long Price { get; set; }
     public bool PriceIsSample { get; set; }
     public string? Method { get; set; }
     public bool IsPanel { get; set; }
@@ -235,10 +230,9 @@ public sealed class CatalogService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
 
-    public CatalogService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit)
-    { _factory = factory; _user = user; _audit = audit; }
+    public CatalogService(IAppDbContextFactory factory, ICurrentUser user)
+    { _factory = factory; _user = user; }
 
     public async Task<List<TestCategory>> GetCategoriesAsync() { await using var db = _factory.Create(); return await db.TestCategories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder).ThenBy(c => c.Name).ToListAsync(); }
     public async Task<List<SpecimenType>> GetSpecimensAsync() { await using var db = _factory.Create(); return await db.SpecimenTypes.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync(); }
@@ -322,7 +316,6 @@ public sealed class CatalogService
         if (dto.Id != 0 && t.Price != dto.Price)
         {
             _user.Require(Permissions.TestsChangePrice);
-            _audit.Add(db, "Test price changed", "LabTest", t.Code, $"{t.Price:0.00} -> {dto.Price:0.00}");
             t.PriceIsSample = false;
         }
         else if (dto.Id == 0 && dto.Price != 0)
@@ -379,7 +372,6 @@ public sealed class CatalogService
             }
         }
 
-        _audit.Add(db, dto.Id == 0 ? "Test created" : "Test updated", "LabTest", code, $"{t.Name}; Active={t.IsActive}");
         await db.SaveChangesAsync();
         return t.Id;
     }

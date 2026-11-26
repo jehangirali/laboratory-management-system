@@ -6,7 +6,7 @@
         <TextBlock Text="Diagnostic details (credentials removed)" Style="{StaticResource FieldLabel}"/>
         <TextBox x:Name="Details" IsReadOnly="True" TextWrapping="Wrap" Height="110" VerticalScrollBarVisibility="Auto"/>
         <TextBlock TextWrapping="Wrap" Margin="0,12,0,0" Style="{StaticResource Muted}"
-                   Text="Check that SQL Server LocalDB is installed (run 'sqllocaldb info' in a command prompt) or edit the LabDb connection string in appsettings.json to point at SQL Server Express. Logs: %LocalAppData%\LaboratoryManagement\logs."/>
+                   Text="Check that the application can create files under %ProgramData%\LaboratoryManagement. The database key is protected for the current Windows user. Logs: %LocalAppData%\LaboratoryManagement\logs."/>
         <Button Content="Close" HorizontalAlignment="Right" Margin="0,14,0,0" Click="Close_Click" IsDefault="True"/>
     </StackPanel>
 </Window>

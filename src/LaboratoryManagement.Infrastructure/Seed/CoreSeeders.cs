@@ -219,6 +219,7 @@ public sealed class ApplicationSettingsSeeder : ISeeder
             (SettingKeys.RequireSampleCollection, "true", "Workflow", "Require sample collection before result entry"),
             (SettingKeys.RequireReceiveInLab, "true", "Workflow", "Require receive-in-lab before result entry"),
             (SettingKeys.RequireVerification, "true", "Workflow", "Require report verification before results can be printed"),
+            (SettingKeys.FullWorkflowEnabled, "false", "Workflow", "Use sample collection, lab receipt and result verification workflow"),
             (SettingKeys.ReportTemplate, "Auto", "Report", "Auto, General, Hematology or Profile"),
             (SettingKeys.ReportFontSize, "11", "Report", "Base font size (points)"),
             (SettingKeys.ReportMarginMm, "12", "Report", "Page margin in millimetres"),

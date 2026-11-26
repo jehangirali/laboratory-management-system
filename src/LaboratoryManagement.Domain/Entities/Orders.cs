@@ -8,12 +8,12 @@ public class LabOrder : Entity
     public int? DoctorId { get; set; }
     public Doctor? Doctor { get; set; }
     public DateTime OrderedAt { get; set; } = DateTime.UtcNow;
-    public decimal Subtotal { get; set; }
-    public decimal Discount { get; set; }
-    public decimal NetAmount { get; set; }
+    public long Subtotal { get; set; }
+    public long Discount { get; set; }
+    public long NetAmount { get; set; }
     /// <summary>Payments received minus refunds.</summary>
-    public decimal PaidAmount { get; set; }
-    public decimal Balance { get; set; }
+    public long PaidAmount { get; set; }
+    public long Balance { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
     public OrderStatus Status { get; set; } = OrderStatus.Registered;
     public string? Notes { get; set; }
@@ -21,8 +21,6 @@ public class LabOrder : Entity
     public DateTime? CancelledAt { get; set; }
     public int? CancelledByUserId { get; set; }
     public int CreatedByUserId { get; set; }
-    public byte[]? RowVersion { get; set; }
-
     public ICollection<OrderLine> Lines { get; set; } = new List<OrderLine>();
     public ICollection<OrderTest> Tests { get; set; } = new List<OrderTest>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
@@ -37,7 +35,7 @@ public class OrderLine : Entity
     public LabOrder Order { get; set; } = null!;
     public int LabTestId { get; set; }
     public LabTest LabTest { get; set; } = null!;
-    public decimal Price { get; set; }
+    public long Price { get; set; }
 }
 
 /// <summary>A test that is actually performed (panels are expanded into their component tests).</summary>
@@ -60,7 +58,7 @@ public class Payment : Entity
     public string ReceiptNo { get; set; } = string.Empty;
     public int OrderId { get; set; }
     public LabOrder Order { get; set; } = null!;
-    public decimal Amount { get; set; }
+    public long Amount { get; set; }
     public PaymentType Type { get; set; } = PaymentType.Payment;
     public int PaymentMethodId { get; set; }
     public PaymentMethod PaymentMethod { get; set; } = null!;
@@ -108,7 +106,6 @@ public class ResultValue : Entity
     public string? Comment { get; set; }
     public int EnteredByUserId { get; set; }
     public DateTime EnteredAt { get; set; } = DateTime.UtcNow;
-    public byte[]? RowVersion { get; set; }
     public ICollection<ResultRevision> Revisions { get; set; } = new List<ResultRevision>();
 }
 
@@ -132,7 +129,6 @@ public class Report : Entity
     public int OrderId { get; set; }
     public LabOrder Order { get; set; } = null!;
     public ReportStatus Status { get; set; } = ReportStatus.Pending;
-    public int CurrentVersion { get; set; }
     public bool IsAmended { get; set; }
     public string? AmendmentReason { get; set; }
     public int? VerifiedByUserId { get; set; }
@@ -143,20 +139,6 @@ public class Report : Entity
     public DateTime? VerifiedAt { get; set; }
     public DateTime? PrintedAt { get; set; }
     public bool DirectlyFinalized { get; set; }
-    public ICollection<ReportVersion> Versions { get; set; } = new List<ReportVersion>();
-}
-
-/// <summary>Immutable snapshot of a verified report. Version 1 is the original; amendments add versions.</summary>
-public class ReportVersion : Entity
-{
-    public int ReportId { get; set; }
-    public Report Report { get; set; } = null!;
-    public int VersionNo { get; set; }
-    public string SnapshotJson { get; set; } = string.Empty;
-    public string? Reason { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public int CreatedByUserId { get; set; }
-    public string CreatedByName { get; set; } = string.Empty;
 }
 
 public class BackupRecord : Entity

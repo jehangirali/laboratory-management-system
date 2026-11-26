@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Documents;
+using System.Globalization;
 using LaboratoryManagement.Application.Services;
 using LaboratoryManagement.Desktop.Printing;
 using LaboratoryManagement.Desktop.ViewModels;
@@ -12,7 +13,7 @@ namespace LaboratoryManagement.Desktop.Services;
 public interface IDialogService
 {
     string? Prompt(string title, string label, string initial = "");
-    PaymentRequest? AskPayment(string title, decimal maxAmount, bool isRefund);
+    PaymentRequest? AskPayment(string title, long maxAmount, bool isRefund);
     Patient? EditPatient(int? id, string? suggestedName = null);
     Doctor? EditDoctor(int? id, string? suggestedName = null);
     bool EditTest(int? id, bool isPanel);
@@ -44,11 +45,11 @@ public sealed class DialogService : IDialogService
         return vm.Accepted ? vm.Text.Trim() : null;
     }
 
-    public PaymentRequest? AskPayment(string title, decimal maxAmount, bool isRefund)
+    public PaymentRequest? AskPayment(string title, long maxAmount, bool isRefund)
     {
         var vm = _sp.GetRequiredService<PaymentDialogViewModel>();
-        vm.Title = title; vm.MaxAmount = maxAmount; vm.IsRefund = isRefund; vm.Amount = maxAmount.ToString("0.##");
-        vm.Caption = isRefund ? $"Maximum refundable: {maxAmount:N2}" : $"Outstanding balance: {maxAmount:N2}";
+        vm.Title = title; vm.MaxAmount = maxAmount; vm.IsRefund = isRefund; vm.Amount = maxAmount.ToString(CultureInfo.CurrentCulture);
+        vm.Caption = isRefund ? $"Maximum refundable: {maxAmount:N0}" : $"Outstanding balance: {maxAmount:N0}";
         Show(new PaymentWindow { DataContext = vm });
         return vm.Result;
     }
@@ -110,14 +111,6 @@ public sealed class DialogService : IDialogService
         {
             var reports = _sp.GetRequiredService<ReportService>();
             var model = await reports.BuildAsync(orderId);
-            var versions = await reports.GetVersionsAsync(orderId);
-            if (versions.Count > 1 && Common.Ui.Confirm($"This report has {versions.Count} versions (original + amendments).\n\nYes = show current version\nNo = choose an earlier version", "Report versions") == false)
-            {
-                var choice = Prompt("Report version", $"Enter version number to view (1-{versions.Count - 1})", "1");
-                if (int.TryParse(choice, out var vn) && versions.FirstOrDefault(v => v.VersionNo == vn) is { } vi)
-                    model = await reports.LoadVersionAsync(vi.Id);
-            }
-
             ShowReportModel(model, $"Report {model.OrderNo}");
         }
         catch (Exception ex) { Common.Ui.HandleException(ex); }

@@ -22,7 +22,7 @@
                 <DataGridTextColumn Header="Specimen" Binding="{Binding SpecimenType.Name}" Width="110"/>
                 <DataGridCheckBoxColumn Header="Panel" Binding="{Binding IsPanel, Mode=OneWay}" Width="55"/>
                 <DataGridTextColumn Header="TAT (h)" Binding="{Binding TurnaroundHours}" Width="60"/>
-                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="90"/>
+                <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N0}" Width="90"/>
                 <DataGridCheckBoxColumn Header="Sample price" Binding="{Binding PriceIsSample, Mode=OneWay}" Width="90"/>
                 <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive, Mode=OneWay}" Width="55"/>
             </DataGrid.Columns>

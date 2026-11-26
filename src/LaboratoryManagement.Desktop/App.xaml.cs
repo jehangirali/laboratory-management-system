@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System.Threading;
 
 namespace LaboratoryManagement.Desktop;
 
@@ -21,10 +22,35 @@ public partial class App : System.Windows.Application
 {
     public static IHost AppHost { get; private set; } = null!;
     private DispatcherTimer? _backupTimer;
+    private Mutex? _instanceMutex;
+    private bool _ownsInstanceMutex;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        try
+        {
+            _instanceMutex = new Mutex(false, @"Global\LaboratoryManagementSystem");
+            try { _ownsInstanceMutex = _instanceMutex.WaitOne(0); }
+            catch (AbandonedMutexException) { _ownsInstanceMutex = true; }
+            if (!_ownsInstanceMutex)
+            {
+                MessageBox.Show("Laboratory Management is already running.", "Laboratory Management", MessageBoxButton.OK, MessageBoxImage.Information);
+                _instanceMutex.Dispose();
+                _instanceMutex = null;
+                Shutdown();
+                return;
+            }
+            SQLitePCL.Batteries_V2.Init();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show("The application could not initialize its single-instance or SQLite support: " + ex.Message,
+                "Laboratory Management", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+            return;
+        }
+
         var logDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LaboratoryManagement", "logs");
         Log.Logger = new LoggerConfiguration().MinimumLevel.Information()
             .WriteTo.File(Path.Combine(logDir, "lab-.log"), rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30).CreateLogger();
@@ -54,7 +80,7 @@ public partial class App : System.Windows.Application
                         typeof(LoginViewModel), typeof(FirstAdminViewModel), typeof(MainViewModel), typeof(DashboardViewModel), typeof(PatientsViewModel),
                         typeof(DoctorsViewModel), typeof(TestsViewModel), typeof(NewOrderViewModel), typeof(OrdersViewModel), typeof(SamplesViewModel),
                         typeof(ResultsViewModel), typeof(VerificationViewModel), typeof(ReportsViewModel), typeof(UsersViewModel), typeof(SettingsViewModel),
-                        typeof(AuditViewModel), typeof(BackupViewModel), typeof(PaymentDialogViewModel), typeof(ChangePasswordViewModel),
+                        typeof(BackupViewModel), typeof(PaymentDialogViewModel), typeof(ChangePasswordViewModel),
                         typeof(PatientEditorViewModel), typeof(DoctorEditorViewModel), typeof(UserEditorViewModel), typeof(TestEditorViewModel),
                         typeof(OrderDetailViewModel), typeof(PatientHistoryViewModel)
                     }) s.AddTransient(t);
@@ -132,6 +158,12 @@ public partial class App : System.Windows.Application
     {
         Log.CloseAndFlush();
         AppHost?.Dispose();
+        if (_ownsInstanceMutex)
+        {
+            _instanceMutex?.ReleaseMutex();
+            _ownsInstanceMutex = false;
+        }
+        _instanceMutex?.Dispose();
         base.OnExit(e);
     }
 }

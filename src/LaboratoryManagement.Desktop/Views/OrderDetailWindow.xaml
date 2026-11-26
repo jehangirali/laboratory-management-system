@@ -17,10 +17,10 @@
                     <TextBlock Text="{Binding Order.Doctor.Name, StringFormat=Referred by: {0}, FallbackValue=Referred by: -}" Margin="0,6,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="{Binding Order.NetAmount, StringFormat=Net: {0:N2}}"/>
-                    <TextBlock Text="{Binding Order.Discount, StringFormat=Discount: {0:N2}}"/>
-                    <TextBlock Text="{Binding Order.PaidAmount, StringFormat=Paid: {0:N2}}"/>
-                    <TextBlock Text="{Binding Order.Balance, StringFormat=Balance: {0:N2}}" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Order.NetAmount, StringFormat=Net: {0:N0}}"/>
+                    <TextBlock Text="{Binding Order.Discount, StringFormat=Discount: {0:N0}}"/>
+                    <TextBlock Text="{Binding Order.PaidAmount, StringFormat=Paid: {0:N0}}"/>
+                    <TextBlock Text="{Binding Order.Balance, StringFormat=Balance: {0:N0}}" FontWeight="Bold"/>
                     <TextBlock Text="{Binding Order.PaymentStatus}" Style="{StaticResource Muted}"/>
                 </StackPanel>
             </Grid>
@@ -31,7 +31,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Code" Binding="{Binding LabTest.Code}" Width="100"/>
                         <DataGridTextColumn Header="Test / panel" Binding="{Binding LabTest.Name}" Width="*"/>
-                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N0}" Width="110"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
@@ -42,12 +42,12 @@
                         <DataGridTextColumn Header="Date" Binding="{Binding PaidAt, Converter={StaticResource LocalDate}}" Width="150"/>
                         <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="90"/>
                         <DataGridTextColumn Header="Method" Binding="{Binding PaymentMethod.Name}" Width="120"/>
-                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat=N2}" Width="110"/>
+                        <DataGridTextColumn Header="Amount" Binding="{Binding Amount, StringFormat=N0}" Width="110"/>
                         <DataGridTextColumn Header="Reference / reason" Binding="{Binding Reason}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </TabItem>
-            <TabItem Header="Samples">
+            <TabItem Header="Samples" Visibility="{Binding ShowSampleWorkflow, Converter={StaticResource BoolToVis}}">
                 <DataGrid ItemsSource="{Binding Samples}">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Barcode" Binding="{Binding Barcode}" Width="130"/>

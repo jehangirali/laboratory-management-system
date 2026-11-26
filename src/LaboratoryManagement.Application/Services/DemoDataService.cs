@@ -13,12 +13,11 @@ public sealed class DemoDataService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly PatientService _patients;
     private readonly DoctorService _doctors;
 
-    public DemoDataService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, PatientService patients, DoctorService doctors)
-    { _factory = factory; _user = user; _audit = audit; _patients = patients; _doctors = doctors; }
+    public DemoDataService(IAppDbContextFactory factory, ICurrentUser user, PatientService patients, DoctorService doctors)
+    { _factory = factory; _user = user; _patients = patients; _doctors = doctors; }
 
     public async Task<string> LoadAsync()
     {
@@ -35,11 +34,10 @@ public sealed class DemoDataService
             }
             foreach (var p in tests.Where(t => t.IsPanel))
             {
-                p.Price = Math.Round(p.PanelItems.Sum(i => i.ComponentTest.Price) * 0.85m / 50m) * 50m;
+                p.Price = (long)Math.Round(p.PanelItems.Sum(i => i.ComponentTest.Price) * 0.85m, MidpointRounding.AwayFromZero);
                 p.PriceIsSample = true;
             }
             priced = tests.Count;
-            _audit.Add(db, "Demo sample prices applied", "LabTest", null, $"{priced} tests received SAMPLE prices (not real market prices)");
             await db.SaveChangesAsync();
         }
 
@@ -76,7 +74,6 @@ public static class ApplicationServiceRegistration
     {
         s.AddSingleton<ICurrentUser, CurrentUser>();
         s.AddSingleton<IPasswordHasher, PasswordHasher>();
-        s.AddSingleton<IAuditService, AuditService>();
         s.AddSingleton<SettingsService>();
         s.AddSingleton<AuthService>();
         s.AddSingleton<UserService>();

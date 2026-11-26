@@ -2,6 +2,7 @@ using LaboratoryManagement.Application.Interfaces;
 using LaboratoryManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Data.Sqlite;
 
 namespace LaboratoryManagement.Infrastructure.Persistence;
 
@@ -14,8 +15,6 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
     public DbSet<User> Users => Set<User>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
-    public DbSet<LoginHistory> LoginHistory => Set<LoginHistory>();
-    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
     public DbSet<TestCategory> TestCategories => Set<TestCategory>();
@@ -37,12 +36,10 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<ResultValue> ResultValues => Set<ResultValue>();
     public DbSet<ResultRevision> ResultRevisions => Set<ResultRevision>();
     public DbSet<Report> Reports => Set<Report>();
-    public DbSet<ReportVersion> ReportVersions => Set<ReportVersion>();
     public DbSet<BackupRecord> BackupRecords => Set<BackupRecord>();
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
-        configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
         configurationBuilder.Properties<string>().HaveMaxLength(256);
     }
 
@@ -62,9 +59,16 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
     {
+        SQLitePCL.Batteries_V2.Init();
         var cs = Environment.GetEnvironmentVariable("LAB_CONNECTION")
-                 ?? @"Server=(localdb)\MSSQLLocalDB;Database=LaboratoryManagement;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True";
-        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlServer(cs).Options;
+                 ?? "Data Source=:memory:";
+        var builder = new SqliteConnectionStringBuilder(cs);
+        if (builder.DataSource != ":memory:")
+        {
+            builder.DataSource = Environment.ExpandEnvironmentVariables(builder.DataSource);
+            SqliteDatabaseRuntime.EnsureLocalPath(builder.DataSource);
+        }
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(builder.ToString()).Options;
         return new AppDbContext(options);
     }
 }

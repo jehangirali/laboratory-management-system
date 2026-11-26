@@ -27,7 +27,9 @@ public class ResultRowDto : ObservableBase
     public ResultType ResultType { get; set; }
     public string Unit { get; set; } = "";
     public string ReferenceText { get; set; } = "";
-    public ReferenceRange? Range { get; set; }
+    public IReadOnlyList<ReferenceRange> ReferenceRanges { get; set; } = Array.Empty<ReferenceRange>();
+    public Gender PatientGender { get; set; }
+    public decimal? PatientAgeYears { get; set; }
     public string[]? Options { get; set; }
 
     private string? _value;
@@ -38,7 +40,7 @@ public class ResultRowDto : ObservableBase
         {
             if (Set(ref _value, value))
             {
-                Flag = ReferenceRangeEvaluator.Evaluate(ResultType, value, Range);
+                Flag = ReferenceRangeEvaluator.EvaluateForPatient(ResultType, value, ReferenceRanges, PatientGender, PatientAgeYears);
                 OnPropertyChanged(nameof(FlagText));
             }
         }
@@ -63,7 +65,7 @@ public class ResultSheet
     public OrderTestStatus Status { get; set; }
     public bool IsAmendment { get; set; }
     public string? AmendmentReason { get; set; }
-    public bool IsLocked => Status == OrderTestStatus.Verified || Status == OrderTestStatus.Cancelled;
+    public bool IsLocked { get; set; }
     public List<ResultRowDto> Rows { get; set; } = new();
 }
 
@@ -71,11 +73,11 @@ public sealed class ResultService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
+    private readonly ReportService _reports;
 
-    public ResultService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, SettingsService settings)
-    { _factory = factory; _user = user; _audit = audit; _settings = settings; }
+    public ResultService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings, ReportService reports)
+    { _factory = factory; _user = user; _settings = settings; _reports = reports; }
 
     public static string[]? OptionsFor(ResultType t) => t switch
     {
@@ -84,19 +86,27 @@ public sealed class ResultService
         _ => null
     };
 
-    public async Task<List<WorklistItem>> GetWorklistAsync(bool includeReadyForVerification, string? text = null)
+    public async Task<List<WorklistItem>> GetWorklistAsync(bool includeReadyForVerification, string? text = null, bool completed = false)
     {
         _user.Require(Permissions.ResultsEnter);
         await using var db = _factory.Create();
-        var q = db.OrderTests.AsNoTracking()
-            .Where(t => t.Order.Status != OrderStatus.Cancelled && t.Status != OrderTestStatus.Verified && t.Status != OrderTestStatus.Cancelled);
-        if (!includeReadyForVerification) q = q.Where(t => t.Status != OrderTestStatus.ReadyForVerification);
+        var q = db.OrderTests.AsNoTracking().Where(t => t.Order.Status != OrderStatus.Cancelled && t.Status != OrderTestStatus.Cancelled);
+        if (completed)
+        {
+            q = q.Where(t => t.Status == OrderTestStatus.Verified);
+        }
+        else
+        {
+            q = q.Where(t => t.Status != OrderTestStatus.Verified);
+            if (_settings.FullWorkflow && !includeReadyForVerification)
+                q = q.Where(t => t.Status != OrderTestStatus.ReadyForVerification);
+        }
         if (!string.IsNullOrWhiteSpace(text))
         {
             var s = text.Trim();
             q = q.Where(t => t.Order.OrderNo.Contains(s) || t.Order.Patient.FullName.Contains(s) || (t.Sample != null && t.Sample.Barcode == s));
         }
-        return await q.OrderBy(t => t.Order.OrderedAt).Take(500).Select(t => new WorklistItem
+        return await q.OrderByDescending(t => t.Order.OrderedAt).ThenByDescending(t => t.Id).Take(500).Select(t => new WorklistItem
         {
             OrderTestId = t.Id, OrderId = t.OrderId, OrderNo = t.Order.OrderNo, PatientName = t.Order.Patient.FullName,
             PatientNo = t.Order.Patient.PatientNo, TestName = t.LabTest.Name, Barcode = t.Sample != null ? t.Sample.Barcode : "",
@@ -122,27 +132,35 @@ public sealed class ResultService
             PatientInfo = $"{patient.PatientNo} | {patient.Gender} | {patient.AgeText}", TestName = ot.LabTest.Name, Status = ot.Status,
             IsAmendment = ot.Order.Report?.Status == ReportStatus.Amended, AmendmentReason = ot.Order.Report?.AmendmentReason
         };
+        sheet.IsLocked = ot.Status == OrderTestStatus.Cancelled || (_settings.FullWorkflow && ot.Status == OrderTestStatus.Verified);
         foreach (var p in ot.LabTest.Parameters.Where(p => p.IsActive).OrderBy(p => p.DisplayOrder))
         {
-            var range = ReferenceRangeEvaluator.Select(p.ReferenceRanges, patient.Gender, age);
             var existing = ot.Results.FirstOrDefault(r => r.TestParameterId == p.Id);
             var row = new ResultRowDto
             {
                 ParameterId = p.Id, ParameterName = p.Name, ResultType = p.ResultType, Unit = p.Unit?.Symbol ?? "",
-                Range = range, ReferenceText = ReferenceRangeEvaluator.FormatRange(range), Options = OptionsFor(p.ResultType)
+                ReferenceRanges = p.ReferenceRanges.ToList(), PatientGender = patient.Gender, PatientAgeYears = age,
+                ReferenceText = ReferenceRangeEvaluator.FormatForPatient(p.ReferenceRanges, patient.Gender, age), Options = OptionsFor(p.ResultType)
             };
-            if (existing != null) { row.Value = existing.Value; row.Comment = existing.Comment; row.Flag = existing.Flag; }
+            if (existing != null) { row.Value = existing.Value; row.Comment = existing.Comment; }
             sheet.Rows.Add(row);
         }
         return sheet;
     }
 
-    public async Task SaveAsync(int orderTestId, IList<ResultRowDto> rows, bool submitForVerification)
+    public async Task SaveAsync(int orderTestId, IList<ResultRowDto> rows, bool submitForVerification, string? amendmentReason = null)
     {
         _user.Require(Permissions.ResultsEnter);
+        var fullWorkflow = _settings.FullWorkflow;
         await using var db = _factory.Create();
         var ot = await db.OrderTests
-            .Include(t => t.Order).ThenInclude(o => o.Patient).Include(t => t.Order).ThenInclude(o => o.Report)
+            .Include(t => t.Order).ThenInclude(o => o.Patient).Include(t => t.Order).ThenInclude(o => o.Doctor)
+            .Include(t => t.Order).ThenInclude(o => o.Report)
+            .Include(t => t.Order).ThenInclude(o => o.Samples)
+            .Include(t => t.Order).ThenInclude(o => o.Tests).ThenInclude(x => x.LabTest).ThenInclude(l => l.Category)
+            .Include(t => t.Order).ThenInclude(o => o.Tests).ThenInclude(x => x.LabTest).ThenInclude(l => l.SpecimenType)
+            .Include(t => t.Order).ThenInclude(o => o.Tests).ThenInclude(x => x.LabTest).ThenInclude(l => l.Parameters)
+            .Include(t => t.Order).ThenInclude(o => o.Tests).ThenInclude(x => x.Results)
             .Include(t => t.Order).ThenInclude(o => o.Tests)
             .Include(t => t.Sample).Include(t => t.LabTest).ThenInclude(l => l.Parameters).ThenInclude(p => p.ReferenceRanges)
             .Include(t => t.LabTest).ThenInclude(l => l.Parameters).ThenInclude(p => p.Unit)
@@ -150,19 +168,26 @@ public sealed class ResultService
             .FirstAsync(t => t.Id == orderTestId);
 
         if (ot.Order.Status == OrderStatus.Cancelled || ot.Status == OrderTestStatus.Cancelled) throw new BusinessRuleException("This test is cancelled.");
-        if (ot.Status == OrderTestStatus.Verified)
-            throw new BusinessRuleException("This result is verified and locked. A report amendment must be started by an authorized user.");
         var report = ot.Order.Report;
-        var amending = report?.Status == ReportStatus.Amended;
-        var requireCollection = _settings.GetBool(SettingKeys.RequireSampleCollection, true);
-        var requireReceive = _settings.GetBool(SettingKeys.RequireReceiveInLab, true);
-        if (ot.Sample != null && requireCollection && ot.Sample.Status == SampleStatus.PendingCollection)
-            throw new BusinessRuleException($"The sample ({ot.Sample.Barcode}) must be collected first.");
-        if (ot.Sample != null && requireReceive
-            && ot.Sample.Status != SampleStatus.ReceivedInLab
-            && ot.Sample.Status != SampleStatus.Processing
-            && !(amending && ot.Sample.Status == SampleStatus.Completed))
-            throw new BusinessRuleException($"The sample ({ot.Sample.Barcode}) must be received in the laboratory first (status: {ot.Sample.Status}).");
+        var fullWorkflowAmendment = report?.Status == ReportStatus.Amended;
+        var directCorrection = !fullWorkflow && ot.Status == OrderTestStatus.Verified;
+        if (fullWorkflow && ot.Status == OrderTestStatus.Verified)
+            throw new BusinessRuleException("This result is verified and locked. A report amendment must be started by an authorized user.");
+        if (directCorrection && string.IsNullOrWhiteSpace(amendmentReason))
+            throw new BusinessRuleException("An amendment reason is required.");
+        var isAmendment = fullWorkflowAmendment || directCorrection;
+        if (fullWorkflow)
+        {
+            var requireCollection = _settings.GetBool(SettingKeys.RequireSampleCollection, true);
+            var requireReceive = _settings.GetBool(SettingKeys.RequireReceiveInLab, true);
+            if (ot.Sample != null && requireCollection && ot.Sample.Status == SampleStatus.PendingCollection)
+                throw new BusinessRuleException($"The sample ({ot.Sample.Barcode}) must be collected first.");
+            if (ot.Sample != null && requireReceive
+                && ot.Sample.Status != SampleStatus.ReceivedInLab
+                && ot.Sample.Status != SampleStatus.Processing
+                && !(fullWorkflowAmendment && ot.Sample.Status == SampleStatus.Completed))
+                throw new BusinessRuleException($"The sample ({ot.Sample.Barcode}) must be received in the laboratory first (status: {ot.Sample.Status}).");
+        }
 
         var patient = ot.Order.Patient;
         decimal? age = patient.DateOfBirth == null ? null : (decimal)((DateTime.Today - patient.DateOfBirth.Value).TotalDays / 365.25);
@@ -172,11 +197,11 @@ public sealed class ResultService
         foreach (var row in rows)
         {
             var param = ot.LabTest.Parameters.First(p => p.Id == row.ParameterId);
-            var range = ReferenceRangeEvaluator.Select(param.ReferenceRanges, patient.Gender, age);
             var value = string.IsNullOrWhiteSpace(row.Value) ? null : row.Value.Trim();
             if (param.ResultType == ResultType.Numeric && value != null && !ReferenceRangeEvaluator.TryParseNumber(value, out _))
                 throw new BusinessRuleException($"'{param.Name}': '{value}' is not a valid number.");
-            var flag = ReferenceRangeEvaluator.Evaluate(param.ResultType, value, range);
+            var flag = ReferenceRangeEvaluator.EvaluateForPatient(param.ResultType, value, param.ReferenceRanges, patient.Gender, age);
+            var referenceText = ReferenceRangeEvaluator.FormatForPatient(param.ReferenceRanges, patient.Gender, age);
             var existing = ot.Results.FirstOrDefault(r => r.TestParameterId == param.Id);
 
             if (existing == null)
@@ -185,48 +210,69 @@ public sealed class ResultService
                 existing = new ResultValue
                 {
                     TestParameterId = param.Id, Value = value, Flag = flag, Comment = row.Comment, Unit = param.Unit?.Symbol,
-                    ReferenceText = ReferenceRangeEvaluator.FormatRange(range), EnteredByUserId = _user.UserId, EnteredAt = now
+                    ReferenceText = referenceText, EnteredByUserId = _user.UserId, EnteredAt = now
                 };
                 existing.Revisions.Add(new ResultRevision
                 {
                     OldValue = null, NewValue = value, OldFlag = ResultFlag.None, NewFlag = flag, ChangedByUserId = _user.UserId,
-                    ChangedByName = _user.FullName, ChangedAt = now, Reason = amending ? report!.AmendmentReason : "Initial entry", IsAmendment = amending
+                    ChangedByName = _user.FullName, ChangedAt = now,
+                    Reason = directCorrection ? amendmentReason!.Trim() : fullWorkflowAmendment ? report!.AmendmentReason : "Initial entry",
+                    IsAmendment = isAmendment
                 });
                 ot.Results.Add(existing);
                 changes.Add($"{param.Name}: (none) -> {value}");
             }
-            else if (existing.Value != value || existing.Comment != row.Comment)
+            else if (existing.Value != value || existing.Comment != row.Comment || existing.Flag != flag)
             {
-                if (existing.Value != value)
+                existing.Revisions.Add(new ResultRevision
                 {
-                    existing.Revisions.Add(new ResultRevision
-                    {
-                        OldValue = existing.Value, NewValue = value, OldFlag = existing.Flag, NewFlag = flag, ChangedByUserId = _user.UserId,
-                        ChangedByName = _user.FullName, ChangedAt = now, Reason = amending ? report!.AmendmentReason : "Edited before verification", IsAmendment = amending
-                    });
-                    changes.Add($"{param.Name}: {existing.Value} -> {value}");
-                }
+                    OldValue = existing.Value, NewValue = value, OldFlag = existing.Flag, NewFlag = flag, ChangedByUserId = _user.UserId,
+                    ChangedByName = _user.FullName, ChangedAt = now,
+                    Reason = directCorrection ? amendmentReason!.Trim() : fullWorkflowAmendment ? report!.AmendmentReason : "Edited before verification",
+                    IsAmendment = isAmendment
+                });
+                changes.Add(existing.Value != value
+                    ? $"{param.Name}: {existing.Value} -> {value}"
+                    : existing.Comment != row.Comment ? $"{param.Name}: comment changed" : $"{param.Name}: flag updated");
                 existing.Value = value; existing.Comment = row.Comment; existing.Flag = flag; existing.Unit = param.Unit?.Symbol;
-                existing.ReferenceText = ReferenceRangeEvaluator.FormatRange(range);
                 existing.EnteredByUserId = _user.UserId; existing.EnteredAt = now;
             }
+            if (existing != null) existing.ReferenceText = referenceText;
         }
 
-        if (submitForVerification)
+        if (!fullWorkflow || submitForVerification)
         {
             var missing = ot.LabTest.Parameters.Where(p => p.IsActive)
                 .Where(p => string.IsNullOrWhiteSpace(ot.Results.FirstOrDefault(r => r.TestParameterId == p.Id)?.Value))
                 .Select(p => p.Name).ToList();
             if (missing.Count > 0) throw new BusinessRuleException("Enter a value for all parameters before submitting: " + string.Join(", ", missing));
-            ot.Status = _settings.GetBool(SettingKeys.RequireVerification, true)
-                ? OrderTestStatus.ReadyForVerification
-                : OrderTestStatus.Verified;
+            if (!fullWorkflow) ot.Status = OrderTestStatus.Verified;
+            else ot.Status = _settings.GetBool(SettingKeys.RequireVerification, true)
+                ? OrderTestStatus.ReadyForVerification : OrderTestStatus.Verified;
         }
         else ot.Status = OrderTestStatus.InProgress;
 
-        if (ot.Sample != null && ot.Sample.Status == SampleStatus.ReceivedInLab) ot.Sample.Status = SampleStatus.Processing;
+        if (fullWorkflow && ot.Sample != null && ot.Sample.Status == SampleStatus.ReceivedInLab) ot.Sample.Status = SampleStatus.Processing;
         if (ot.Order.Status == OrderStatus.Registered) ot.Order.Status = OrderStatus.InProgress;
-        if (report != null && !amending)
+        if (!fullWorkflow && report != null)
+        {
+            var active = ot.Order.Tests.Where(t => t.Status != OrderTestStatus.Cancelled).ToList();
+            if (active.All(t => t.Status == OrderTestStatus.Verified))
+            {
+                if (directCorrection && changes.Count > 0)
+                {
+                    report.AmendmentReason = amendmentReason!.Trim();
+                    report.IsAmended = true;
+                    report.Status = ReportStatus.Amended;
+                }
+                if (changes.Count > 0) _reports.FinalizeReport(ot.Order, directlyFinalized: true);
+            }
+            else
+            {
+                report.Status = ReportStatus.InProgress;
+            }
+        }
+        else if (report != null && !fullWorkflowAmendment)
         {
             var active = ot.Order.Tests.Where(t => t.Status != OrderTestStatus.Cancelled).ToList();
             if (!_settings.GetBool(SettingKeys.RequireVerification, true))
@@ -235,7 +281,6 @@ public sealed class ResultService
                 if (active.All(t => t.Status == OrderTestStatus.Verified))
                 {
                     report.Status = ReportStatus.Verified;
-                    report.CurrentVersion = Math.Max(1, report.CurrentVersion);
                     report.IsAmended = false;
                     report.DirectlyFinalized = true;
                     report.VerifiedByUserId = _user.UserId;
@@ -254,8 +299,6 @@ public sealed class ResultService
                 report.Status = active.All(t => t.Status == OrderTestStatus.ReadyForVerification) ? ReportStatus.ReadyForVerification : ReportStatus.InProgress;
         }
 
-        _audit.Add(db, submitForVerification ? "Results submitted" : "Results saved", "OrderTest", $"{ot.Order.OrderNo}/{ot.LabTest.Code}",
-                   changes.Count == 0 ? "No value changes" : string.Join("; ", changes));
         await db.SaveChangesAsync();
     }
 

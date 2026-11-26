@@ -2,13 +2,14 @@
     <DockPanel>
         <TextBlock DockPanel.Dock="Top" Text="Orders" Style="{StaticResource PageTitle}"/>
         <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-            <DatePicker SelectedDate="{Binding From}" Margin="0,0,8,0"/>
-            <DatePicker SelectedDate="{Binding To}" Margin="0,0,8,0"/>
+            <DatePicker SelectedDate="{Binding From}" ToolTip="Optional start date" Margin="0,0,8,0"/>
+            <DatePicker SelectedDate="{Binding To}" ToolTip="Optional end date" Margin="0,0,8,0"/>
             <TextBox Width="220" Text="{Binding Text}" ToolTip="Order no, patient name/ID/phone or sample barcode" Margin="0,0,8,0"/>
             <ComboBox Width="120" ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding StatusFilter}" Margin="0,0,8,0"/>
             <CheckBox Content="With balance" IsChecked="{Binding OnlyBalance}" Margin="0,0,12,0"/>
             <Button Content="Search" Style="{StaticResource PrimaryButton}" Command="{Binding SearchCommand}" IsDefault="True"/>
             <Button Content="Open" Command="{Binding OpenCommand}"/>
+            <Button Content="Print report" Command="{Binding PrintReportCommand}" IsEnabled="{Binding CanPrintReport}"/>
             <Button Content="New order" Command="{Binding NewCommand}" IsEnabled="{Binding CanCreate}"/>
         </WrapPanel>
         <DataGrid ItemsSource="{Binding Orders}" SelectedItem="{Binding Selected}">
@@ -20,9 +21,9 @@
                 <DataGridTextColumn Header="Doctor" Binding="{Binding Doctor.Name}" Width="150"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
                 <DataGridTextColumn Header="Report" Binding="{Binding Report.Status}" Width="130"/>
-                <DataGridTextColumn Header="Net" Binding="{Binding NetAmount, StringFormat=N2}" Width="90"/>
-                <DataGridTextColumn Header="Paid" Binding="{Binding PaidAmount, StringFormat=N2}" Width="90"/>
-                <DataGridTextColumn Header="Balance" Binding="{Binding Balance, StringFormat=N2}" Width="90"/>
+                <DataGridTextColumn Header="Net" Binding="{Binding NetAmount, StringFormat=N0}" Width="90"/>
+                <DataGridTextColumn Header="Paid" Binding="{Binding PaidAmount, StringFormat=N0}" Width="90"/>
+                <DataGridTextColumn Header="Balance" Binding="{Binding Balance, StringFormat=N0}" Width="90"/>
                 <DataGridTextColumn Header="Payment" Binding="{Binding PaymentStatus}" Width="90"/>
             </DataGrid.Columns>
         </DataGrid>

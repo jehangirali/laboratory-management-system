@@ -26,7 +26,6 @@ public static class Permissions
     public const string CommissionsView = "Commissions.View";
     public const string UsersManage = "Users.Manage";
     public const string SettingsManage = "Settings.Manage";
-    public const string AuditView = "Audit.View";
     public const string BackupManage = "Backup.Manage";
 
     public static readonly IReadOnlyList<(string Code, string Group, string Description)> All = new[]
@@ -54,7 +53,6 @@ public static class Permissions
         (CommissionsView, "Reports", "View doctor commission reports"),
         (UsersManage, "Administration", "Manage users, roles and permissions"),
         (SettingsManage, "Administration", "Manage laboratory settings"),
-        (AuditView, "Administration", "View audit trail and login history"),
         (BackupManage, "Administration", "Backup and restore database"),
     };
 }

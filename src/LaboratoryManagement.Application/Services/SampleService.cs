@@ -29,11 +29,10 @@ public sealed class SampleService
 {
     private readonly IAppDbContextFactory _factory;
     private readonly ICurrentUser _user;
-    private readonly IAuditService _audit;
     private readonly SettingsService _settings;
 
-    public SampleService(IAppDbContextFactory factory, ICurrentUser user, IAuditService audit, SettingsService settings)
-    { _factory = factory; _user = user; _audit = audit; _settings = settings; }
+    public SampleService(IAppDbContextFactory factory, ICurrentUser user, SettingsService settings)
+    { _factory = factory; _user = user; _settings = settings; }
 
     private static IQueryable<Sample> Base(IAppDbContext db) =>
         db.Samples.AsNoTracking().Include(s => s.Order).ThenInclude(o => o.Patient)
@@ -99,7 +98,6 @@ public sealed class SampleService
         if (s.Status != SampleStatus.PendingCollection) throw new BusinessRuleException($"Sample is already '{s.Status}'.");
         s.Status = SampleStatus.Collected; s.CollectedAt = DateTime.UtcNow; s.CollectedByUserId = _user.UserId;
         if (s.Order.Status == OrderStatus.Registered) s.Order.Status = OrderStatus.InProgress;
-        _audit.Add(db, "Sample collected", "Sample", s.Barcode, $"Order={s.Order.OrderNo}");
         await db.SaveChangesAsync();
     }
 
@@ -117,7 +115,6 @@ public sealed class SampleService
         }
         s.Status = SampleStatus.ReceivedInLab; s.ReceivedAt = DateTime.UtcNow; s.ReceivedByUserId = _user.UserId;
         if (s.Order.Status == OrderStatus.Registered) s.Order.Status = OrderStatus.InProgress;
-        _audit.Add(db, "Sample received in lab", "Sample", s.Barcode, $"Order={s.Order.OrderNo}");
         await db.SaveChangesAsync();
     }
 
@@ -130,7 +127,6 @@ public sealed class SampleService
         if (s.Status is SampleStatus.Completed or SampleStatus.Rejected or SampleStatus.RecollectionRequired)
             throw new BusinessRuleException($"Sample is '{s.Status}' and cannot be rejected.");
         s.Status = SampleStatus.RecollectionRequired; s.RejectionReason = reason.Trim(); s.RejectedAt = DateTime.UtcNow;
-        _audit.Add(db, "Sample rejected", "Sample", s.Barcode, $"Order={s.Order.OrderNo}; Reason: {reason}");
         await db.SaveChangesAsync();
     }
 
@@ -153,7 +149,6 @@ public sealed class SampleService
             db.Samples.Add(ns);
             foreach (var t in old.Tests.Where(t => t.Status != OrderTestStatus.Verified)) t.Sample = ns;
             old.Status = SampleStatus.Rejected;
-            _audit.Add(db, "Recollection requested", "Sample", old.Barcode, $"New barcode {ns.Barcode}; Order={old.Order.OrderNo}");
             await db.SaveChangesAsync();
             return ns.Id;
         });

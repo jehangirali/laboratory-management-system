@@ -40,7 +40,6 @@ public class User : Entity
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? LastLoginAt { get; set; }
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 }
 
@@ -50,26 +49,4 @@ public class UserRole
     public User User { get; set; } = null!;
     public int RoleId { get; set; }
     public Role Role { get; set; } = null!;
-}
-
-public class LoginHistory : Entity
-{
-    public int? UserId { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public DateTime At { get; set; } = DateTime.UtcNow;
-    /// <summary>Login, FailedLogin, Logout.</summary>
-    public string Event { get; set; } = string.Empty;
-    public string? Details { get; set; }
-    public string? MachineName { get; set; }
-}
-
-public class AuditLog : Entity
-{
-    public DateTime At { get; set; } = DateTime.UtcNow;
-    public int? UserId { get; set; }
-    public string Username { get; set; } = string.Empty;
-    public string Action { get; set; } = string.Empty;
-    public string EntityType { get; set; } = string.Empty;
-    public string? EntityId { get; set; }
-    public string? Details { get; set; }
 }

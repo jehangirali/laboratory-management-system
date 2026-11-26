@@ -48,6 +48,25 @@ public static class ReferenceRangeEvaluator
         }
     }
 
+    public static ResultFlag EvaluateForPatient(ResultType type, string? value, IEnumerable<ReferenceRange> ranges, Gender gender, decimal? ageYears)
+    {
+        var applicable = ranges
+            .Where(r => ageYears == null || (ageYears >= r.MinAgeYears && (r.MaxAgeYears == null || ageYears < r.MaxAgeYears)))
+            .ToList();
+        var selected = Select(applicable, gender, ageYears);
+        if (selected != null) return Evaluate(type, value, selected);
+        if (gender != Gender.Other) return ResultFlag.None;
+
+        var flags = applicable
+            .Where(r => r.Gender != null)
+            .Select(r => Evaluate(type, value, r))
+            .ToList();
+        if (flags.Count == 0 || flags.Contains(ResultFlag.None)) return ResultFlag.None;
+
+        var distinctFlags = flags.Distinct().ToList();
+        return distinctFlags.Count == 1 ? distinctFlags[0] : ResultFlag.Abnormal;
+    }
+
     public static string FormatRange(ReferenceRange? r)
     {
         if (r == null) return "";
@@ -58,6 +77,21 @@ public static class ReferenceRangeEvaluator
         if (r.Low != null) return $"> {r.Low.Value.ToString("0.##", inv)}";
         if (r.High != null) return $"< {r.High.Value.ToString("0.##", inv)}";
         return "";
+    }
+
+    public static string FormatForPatient(IEnumerable<ReferenceRange> ranges, Gender gender, decimal? ageYears)
+    {
+        var applicable = ranges
+            .Where(r => ageYears == null || (ageYears >= r.MinAgeYears && (r.MaxAgeYears == null || ageYears < r.MaxAgeYears)))
+            .ToList();
+        var selected = Select(applicable, gender, ageYears);
+        if (selected != null) return FormatRange(selected);
+        if (gender != Gender.Other) return "";
+
+        return string.Join("; ", applicable
+            .Where(r => r.Gender != null)
+            .OrderBy(r => r.Gender)
+            .Select(r => $"{r.Gender}: {FormatRange(r)}"));
     }
 
     public static string FlagText(ResultFlag f) => f switch

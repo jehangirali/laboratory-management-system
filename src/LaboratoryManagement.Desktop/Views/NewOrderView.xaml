@@ -12,13 +12,14 @@
                             <StackPanel>
                                 <TextBlock Text="Patient (type name, ID, phone or CNIC)" Style="{StaticResource FieldLabel}"/>
                                 <ctl:SearchableLookup ItemsSource="{Binding PatientResults}" SelectedItem="{Binding SelectedPatient, Mode=TwoWay}" SearchText="{Binding PatientSearch, Mode=TwoWay}"
-                                                      DisplayMemberPath="DisplayText" AddNewLabel="+ Add new patient" AddNewCommand="{Binding AddPatientCommand}" Placeholder="Search patient..."/>
+                                                      DisplayMemberPath="DisplayText" Placeholder="Search or enter patient name..."/>
                                 <TextBlock Text="{Binding PatientInfo}" Style="{StaticResource Muted}" Margin="0,6,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Referring doctor (optional)" Style="{StaticResource FieldLabel}"/>
                                 <ctl:SearchableLookup ItemsSource="{Binding DoctorResults}" SelectedItem="{Binding SelectedDoctor, Mode=TwoWay}" SearchText="{Binding DoctorSearch, Mode=TwoWay}"
-                                                      DisplayMemberPath="DisplayText" AddNewLabel="+ Add new doctor" AddNewCommand="{Binding AddDoctorCommand}" Placeholder="Search doctor..."/>
+                                                      DisplayMemberPath="DisplayText" Placeholder="Search or enter doctor name..."/>
+                                <TextBlock Text="{Binding DoctorInfo}" Style="{StaticResource Muted}" Margin="0,6,0,0"/>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -32,7 +33,7 @@
                                     <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="80"/>
                                     <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
                                     <DataGridCheckBoxColumn Header="Panel" Binding="{Binding IsPanel, Mode=OneWay}" Width="50"/>
-                                    <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="80"/>
+                                    <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N0}" Width="80"/>
                                 </DataGrid.Columns>
                             </DataGrid>
                             <Button Content="Add selected (or double-click)" Command="{Binding AddTestCommand}" HorizontalAlignment="Left"/>
@@ -42,7 +43,7 @@
                                     <DataGridTextColumn Header="Code" Binding="{Binding Code}" Width="80"/>
                                     <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
                                     <DataGridTextColumn Header="Type" Binding="{Binding Kind}" Width="60"/>
-                                    <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N2}" Width="80"/>
+                                    <DataGridTextColumn Header="Price" Binding="{Binding Price, StringFormat=N0}" Width="80"/>
                                     <DataGridTextColumn Header="Note" Binding="{Binding Flag}" Width="110"/>
                                 </DataGrid.Columns>
                             </DataGrid>
@@ -56,13 +57,13 @@
                     <TextBlock Text="Billing" Style="{StaticResource SectionTitle}"/>
                     <Grid>
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock Text="Subtotal"/><TextBlock Grid.Column="1" Text="{Binding Subtotal, StringFormat=N2}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Subtotal"/><TextBlock Grid.Column="1" Text="{Binding Subtotal, StringFormat=N0}" FontWeight="SemiBold"/>
                     </Grid>
                     <TextBlock Text="Discount (requires permission)" Style="{StaticResource FieldLabel}"/>
                     <TextBox Text="{Binding DiscountText, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanDiscount}"/>
                     <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock Text="Net amount" FontWeight="Bold"/><TextBlock Grid.Column="1" Text="{Binding Net, StringFormat=N2}" FontWeight="Bold" FontSize="16"/>
+                        <TextBlock Text="Net amount" FontWeight="Bold"/><TextBlock Grid.Column="1" Text="{Binding Net, StringFormat=N0}" FontWeight="Bold" FontSize="16"/>
                     </Grid>
                     <TextBlock Text="Payment received now" Style="{StaticResource FieldLabel}"/>
                     <DockPanel>
@@ -75,7 +76,7 @@
                     <TextBox Text="{Binding PaymentReference}"/>
                     <Grid Margin="0,10,0,0">
                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                        <TextBlock Text="Balance due"/><TextBlock Grid.Column="1" Text="{Binding Balance, StringFormat=N2}" FontWeight="SemiBold"/>
+                        <TextBlock Text="Balance due"/><TextBlock Grid.Column="1" Text="{Binding Balance, StringFormat=N0}" FontWeight="SemiBold"/>
                     </Grid>
                     <TextBlock Text="Notes" Style="{StaticResource FieldLabel}"/>
                     <TextBox Text="{Binding Notes}" AcceptsReturn="True" Height="48" TextWrapping="Wrap"/>

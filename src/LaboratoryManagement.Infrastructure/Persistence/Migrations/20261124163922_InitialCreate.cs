@@ -15,10 +15,10 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "AppSettings",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    Group = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    Key = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Value = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    Group = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -29,15 +29,15 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "AuditLogs",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    At = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    EntityType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    EntityId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    Details = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    At = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Action = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    EntityType = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    EntityId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    Details = table.Column<string>(type: "TEXT", maxLength: 4000, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -48,15 +48,15 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "BackupRecords",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    At = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    SizeBytes = table.Column<long>(type: "bigint", nullable: false),
-                    Success = table.Column<bool>(type: "bit", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Kind = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    At = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    FilePath = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    SizeBytes = table.Column<long>(type: "INTEGER", nullable: false),
+                    Success = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Message = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    Kind = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -67,17 +67,17 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Doctors",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DoctorNo = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Specialization = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
-                    ClinicOrHospital = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Contact = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CommissionType = table.Column<int>(type: "int", nullable: false),
-                    CommissionValue = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    DoctorNo = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Specialization = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true),
+                    ClinicOrHospital = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Contact = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    Address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    CommissionType = table.Column<int>(type: "INTEGER", nullable: false),
+                    CommissionValue = table.Column<decimal>(type: "TEXT", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -88,14 +88,14 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "LoginHistory",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: true),
-                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    At = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Event = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Details = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    MachineName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    UserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    At = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Event = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Details = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    MachineName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -106,11 +106,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "MeasurementUnits",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Symbol = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Symbol = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -121,9 +121,8 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "NumberSequences",
                 columns: table => new
                 {
-                    Key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    LastValue = table.Column<long>(type: "bigint", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    Key = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    LastValue = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -134,21 +133,20 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Patients",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PatientNo = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    FatherOrHusbandName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Gender = table.Column<int>(type: "int", nullable: false),
-                    DateOfBirth = table.Column<DateTime>(type: "date", nullable: true),
-                    Phone = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
-                    WhatsApp = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    Email = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Cnic = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
-                    RegisteredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PatientNo = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    FullName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    FatherOrHusbandName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Gender = table.Column<int>(type: "INTEGER", nullable: false),
+                    DateOfBirth = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Phone = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
+                    WhatsApp = table.Column<string>(type: "TEXT", maxLength: 30, nullable: true),
+                    Address = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Cnic = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
+                    RegisteredAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -159,11 +157,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "PaymentMethods",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -174,11 +172,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Permissions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Group = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Group = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 300, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -189,11 +187,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Roles",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    IsSystem = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    IsSystem = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -204,11 +202,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "SampleContainers",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -219,11 +217,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "SpecimenTypes",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -234,12 +232,12 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "TestCategories",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
-                    DisplayOrder = table.Column<int>(type: "int", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 150, nullable: false),
+                    DisplayOrder = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -250,17 +248,17 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Designation = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    SignatureText = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    MustChangePassword = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    FullName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    PasswordHash = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Designation = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    SignatureText = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
+                    MustChangePassword = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastLoginAt = table.Column<DateTime>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -271,25 +269,24 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Orders",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderNo = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
-                    PatientId = table.Column<int>(type: "int", nullable: false),
-                    DoctorId = table.Column<int>(type: "int", nullable: true),
-                    OrderedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Subtotal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    Discount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    NetAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    PaidAmount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    Balance = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    PaymentStatus = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    CancelReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CancelledAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CancelledByUserId = table.Column<int>(type: "int", nullable: true),
-                    CreatedByUserId = table.Column<int>(type: "int", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderNo = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    PatientId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DoctorId = table.Column<int>(type: "INTEGER", nullable: true),
+                    OrderedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Subtotal = table.Column<long>(type: "INTEGER", nullable: false),
+                    Discount = table.Column<long>(type: "INTEGER", nullable: false),
+                    NetAmount = table.Column<long>(type: "INTEGER", nullable: false),
+                    PaidAmount = table.Column<long>(type: "INTEGER", nullable: false),
+                    Balance = table.Column<long>(type: "INTEGER", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    Notes = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    CancelReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    CancelledAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CancelledByUserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    CreatedByUserId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -312,8 +309,8 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "RolePermissions",
                 columns: table => new
                 {
-                    RoleId = table.Column<int>(type: "int", nullable: false),
-                    PermissionId = table.Column<int>(type: "int", nullable: false)
+                    RoleId = table.Column<int>(type: "INTEGER", nullable: false),
+                    PermissionId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -336,21 +333,20 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "LabTests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Code = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    CategoryId = table.Column<int>(type: "int", nullable: false),
-                    SpecimenTypeId = table.Column<int>(type: "int", nullable: true),
-                    ContainerId = table.Column<int>(type: "int", nullable: true),
-                    Instructions = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    TurnaroundHours = table.Column<int>(type: "int", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    PriceIsSample = table.Column<bool>(type: "bit", nullable: false),
-                    Method = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
-                    IsPanel = table.Column<bool>(type: "bit", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Code = table.Column<string>(type: "TEXT", maxLength: 30, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    CategoryId = table.Column<int>(type: "INTEGER", nullable: false),
+                    SpecimenTypeId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ContainerId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Instructions = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    TurnaroundHours = table.Column<int>(type: "INTEGER", nullable: false),
+                    Price = table.Column<long>(type: "INTEGER", nullable: false),
+                    PriceIsSample = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Method = table.Column<string>(type: "TEXT", maxLength: 150, nullable: true),
+                    IsPanel = table.Column<bool>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -379,8 +375,8 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "UserRoles",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    RoleId = table.Column<int>(type: "int", nullable: false)
+                    UserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    RoleId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -403,17 +399,17 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Payments",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ReceiptNo = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    Type = table.Column<int>(type: "int", nullable: false),
-                    PaymentMethodId = table.Column<int>(type: "int", nullable: false),
-                    PaidAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ReceivedByUserId = table.Column<int>(type: "int", nullable: false),
-                    Reference = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ReceiptNo = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    OrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Amount = table.Column<long>(type: "INTEGER", nullable: false),
+                    Type = table.Column<int>(type: "INTEGER", nullable: false),
+                    PaymentMethodId = table.Column<int>(type: "INTEGER", nullable: false),
+                    PaidAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    ReceivedByUserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Reference = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    Reason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -436,21 +432,21 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Reports",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CurrentVersion = table.Column<int>(type: "int", nullable: false),
-                    IsAmended = table.Column<bool>(type: "bit", nullable: false),
-                    AmendmentReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    VerifiedByUserId = table.Column<int>(type: "int", nullable: true),
-                    VerifierName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    VerifierDesignation = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    VerifierRoles = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    SignatureText = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    VerifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PrintedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DirectlyFinalized = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    CurrentVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsAmended = table.Column<bool>(type: "INTEGER", nullable: false),
+                    AmendmentReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    VerifiedByUserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    VerifierName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    VerifierDesignation = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    VerifierRoles = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    SignatureText = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    VerifiedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    PrintedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DirectlyFinalized = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -467,21 +463,21 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "Samples",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    Barcode = table.Column<string>(type: "nvarchar(40)", maxLength: 40, nullable: false),
-                    SpecimenTypeId = table.Column<int>(type: "int", nullable: true),
-                    ContainerId = table.Column<int>(type: "int", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CollectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    CollectedByUserId = table.Column<int>(type: "int", nullable: true),
-                    ReceivedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    ReceivedByUserId = table.Column<int>(type: "int", nullable: true),
-                    RejectionReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    RejectedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    RecollectionOfSampleId = table.Column<int>(type: "int", nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Barcode = table.Column<string>(type: "TEXT", maxLength: 40, nullable: false),
+                    SpecimenTypeId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ContainerId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CollectedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CollectedByUserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    ReceivedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    ReceivedByUserId = table.Column<int>(type: "INTEGER", nullable: true),
+                    RejectionReason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    RejectedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    RecollectionOfSampleId = table.Column<int>(type: "INTEGER", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -516,11 +512,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "OrderLines",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    LabTestId = table.Column<int>(type: "int", nullable: false),
-                    Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    LabTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Price = table.Column<long>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -543,11 +539,11 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "PanelItems",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PanelTestId = table.Column<int>(type: "int", nullable: false),
-                    ComponentTestId = table.Column<int>(type: "int", nullable: false),
-                    DisplayOrder = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    PanelTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ComponentTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DisplayOrder = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -570,15 +566,15 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "TestParameters",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    LabTestId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ResultType = table.Column<int>(type: "int", nullable: false),
-                    UnitId = table.Column<int>(type: "int", nullable: true),
-                    DisplayOrder = table.Column<int>(type: "int", nullable: false),
-                    DecimalPlaces = table.Column<int>(type: "int", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    LabTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    ResultType = table.Column<int>(type: "INTEGER", nullable: false),
+                    UnitId = table.Column<int>(type: "INTEGER", nullable: true),
+                    DisplayOrder = table.Column<int>(type: "INTEGER", nullable: false),
+                    DecimalPlaces = table.Column<int>(type: "INTEGER", nullable: false),
+                    IsActive = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -601,15 +597,15 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "ReportVersions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ReportId = table.Column<int>(type: "int", nullable: false),
-                    VersionNo = table.Column<int>(type: "int", nullable: false),
-                    SnapshotJson = table.Column<string>(type: "nvarchar(max)", maxLength: 256, nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CreatedByUserId = table.Column<int>(type: "int", nullable: false),
-                    CreatedByName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ReportId = table.Column<int>(type: "INTEGER", nullable: false),
+                    VersionNo = table.Column<int>(type: "INTEGER", nullable: false),
+                    SnapshotJson = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    Reason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    CreatedByUserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedByName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -626,13 +622,13 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "OrderTests",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderId = table.Column<int>(type: "int", nullable: false),
-                    OrderLineId = table.Column<int>(type: "int", nullable: true),
-                    LabTestId = table.Column<int>(type: "int", nullable: false),
-                    SampleId = table.Column<int>(type: "int", nullable: true),
-                    Status = table.Column<int>(type: "int", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderId = table.Column<int>(type: "INTEGER", nullable: false),
+                    OrderLineId = table.Column<int>(type: "INTEGER", nullable: true),
+                    LabTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    SampleId = table.Column<int>(type: "INTEGER", nullable: true),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -667,19 +663,19 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "ReferenceRanges",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    TestParameterId = table.Column<int>(type: "int", nullable: false),
-                    Gender = table.Column<int>(type: "int", nullable: true),
-                    MinAgeYears = table.Column<decimal>(type: "decimal(8,3)", precision: 8, scale: 3, nullable: false),
-                    MaxAgeYears = table.Column<decimal>(type: "decimal(8,3)", precision: 8, scale: 3, nullable: true),
-                    Low = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
-                    High = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
-                    CriticalLow = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
-                    CriticalHigh = table.Column<decimal>(type: "decimal(18,4)", precision: 18, scale: 4, nullable: true),
-                    NormalText = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    DisplayText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    IsExample = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    TestParameterId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Gender = table.Column<int>(type: "INTEGER", nullable: true),
+                    MinAgeYears = table.Column<decimal>(type: "TEXT", precision: 8, scale: 3, nullable: false),
+                    MaxAgeYears = table.Column<decimal>(type: "TEXT", precision: 8, scale: 3, nullable: true),
+                    Low = table.Column<decimal>(type: "TEXT", precision: 18, scale: 4, nullable: true),
+                    High = table.Column<decimal>(type: "TEXT", precision: 18, scale: 4, nullable: true),
+                    CriticalLow = table.Column<decimal>(type: "TEXT", precision: 18, scale: 4, nullable: true),
+                    CriticalHigh = table.Column<decimal>(type: "TEXT", precision: 18, scale: 4, nullable: true),
+                    NormalText = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    DisplayText = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    IsExample = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -696,18 +692,17 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "ResultValues",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    OrderTestId = table.Column<int>(type: "int", nullable: false),
-                    TestParameterId = table.Column<int>(type: "int", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Unit = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ReferenceText = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
-                    Flag = table.Column<int>(type: "int", nullable: false),
-                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    EnteredByUserId = table.Column<int>(type: "int", nullable: false),
-                    EnteredAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: true)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    OrderTestId = table.Column<int>(type: "INTEGER", nullable: false),
+                    TestParameterId = table.Column<int>(type: "INTEGER", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    Unit = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    ReferenceText = table.Column<string>(type: "TEXT", maxLength: 300, nullable: true),
+                    Flag = table.Column<int>(type: "INTEGER", nullable: false),
+                    Comment = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    EnteredByUserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    EnteredAt = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -730,18 +725,18 @@ namespace LaboratoryManagement.Infrastructure.Persistence.Migrations
                 name: "ResultRevisions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ResultValueId = table.Column<int>(type: "int", nullable: false),
-                    OldValue = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    NewValue = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    OldFlag = table.Column<int>(type: "int", nullable: false),
-                    NewFlag = table.Column<int>(type: "int", nullable: false),
-                    ChangedByUserId = table.Column<int>(type: "int", nullable: false),
-                    ChangedByName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    ChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Reason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IsAmendment = table.Column<bool>(type: "bit", nullable: false)
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    ResultValueId = table.Column<int>(type: "INTEGER", nullable: false),
+                    OldValue = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    NewValue = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    OldFlag = table.Column<int>(type: "INTEGER", nullable: false),
+                    NewFlag = table.Column<int>(type: "INTEGER", nullable: false),
+                    ChangedByUserId = table.Column<int>(type: "INTEGER", nullable: false),
+                    ChangedByName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    ChangedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    Reason = table.Column<string>(type: "TEXT", maxLength: 500, nullable: true),
+                    IsAmendment = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {

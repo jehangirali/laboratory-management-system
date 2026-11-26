@@ -35,7 +35,7 @@ public sealed class DashboardViewModel : ViewModelBase
         target.Clear();
         var max = pts.Count == 0 ? 0 : pts.Max(p => Math.Abs(p.Value));
         foreach (var p in pts)
-            target.Add(new ChartBar(p.Label, money ? p.Value.ToString("N0") : p.Value.ToString("0"), max == 0 ? 0 : (double)(Math.Abs(p.Value) / max) * 200));
+            target.Add(new ChartBar(p.Label, money ? p.Value.ToString("N0") : p.Value.ToString("0"), max == 0 ? 0 : (double)Math.Abs(p.Value) / max * 200));
     }
 
     public override async Task LoadAsync()
@@ -159,7 +159,7 @@ public sealed class OrderLineVm
     public LabTest Test { get; init; } = null!;
     public string Name => Test.Name;
     public string Code => Test.Code;
-    public decimal Price => Test.Price;
+    public long Price => Test.Price;
     public string Flag => Test.Price <= 0 ? "Price not set" : Test.PriceIsSample ? "SAMPLE price" : "";
     public string Kind => Test.IsPanel ? "Panel" : "Test";
 }
@@ -179,11 +179,22 @@ public sealed class NewOrderViewModel : ViewModelBase
 
     // Patient lookup
     private string _patientSearch = ""; private int _pver;
-    public string PatientSearch { get => _patientSearch; set { if (Set(ref _patientSearch, value)) _ = SearchPatientsAsync(); } }
+    public string PatientSearch
+    {
+        get => _patientSearch;
+        set
+        {
+            if (!Set(ref _patientSearch, value)) return;
+            OnPropertyChanged(nameof(PatientInfo));
+            _ = SearchPatientsAsync();
+        }
+    }
     public ObservableCollection<Patient> PatientResults { get; } = new();
     private Patient? _patient;
     public Patient? SelectedPatient { get => _patient; set { if (Set(ref _patient, value)) OnPropertyChanged(nameof(PatientInfo)); } }
-    public string PatientInfo => SelectedPatient == null ? "No patient selected" : $"{SelectedPatient.FullName}  |  {SelectedPatient.PatientNo}  |  {SelectedPatient.Gender}, {SelectedPatient.AgeText}  |  {SelectedPatient.Phone}";
+    public string PatientInfo => SelectedPatient != null
+        ? $"{SelectedPatient.FullName}  |  {SelectedPatient.PatientNo}  |  {SelectedPatient.Gender}, {SelectedPatient.AgeText}  |  {SelectedPatient.Phone}"
+        : string.IsNullOrWhiteSpace(PatientSearch) ? "No patient selected" : $"Patient to use or add: {PatientSearch.Trim()}";
     private async Task SearchPatientsAsync()
     {
         var v = ++_pver;
@@ -196,18 +207,28 @@ public sealed class NewOrderViewModel : ViewModelBase
         }
         catch (Exception ex) { Ui.HandleException(ex); }
     }
-    public ICommand AddPatientCommand => new RelayCommand(text =>
-    {
-        // The order form (selected tests, amounts) stays untouched while the dialog is open.
-        var p = _dialogs.EditPatient(null, text as string);
-        if (p != null) SelectedPatient = p;
-    });
-
-    // Doctor lookup with "add new"
+    // An unselected doctor name is resolved when the order is created.
     private string _doctorSearch = ""; private int _dver;
-    public string DoctorSearch { get => _doctorSearch; set { if (Set(ref _doctorSearch, value)) _ = SearchDoctorsAsync(); } }
+    public string DoctorSearch
+    {
+        get => _doctorSearch;
+        set
+        {
+            if (!Set(ref _doctorSearch, value)) return;
+            OnPropertyChanged(nameof(DoctorInfo));
+            _ = SearchDoctorsAsync();
+        }
+    }
     public ObservableCollection<Doctor> DoctorResults { get; } = new();
-    private Doctor? _doctor; public Doctor? SelectedDoctor { get => _doctor; set => Set(ref _doctor, value); }
+    private Doctor? _doctor;
+    public Doctor? SelectedDoctor
+    {
+        get => _doctor;
+        set { if (Set(ref _doctor, value)) OnPropertyChanged(nameof(DoctorInfo)); }
+    }
+    public string DoctorInfo => SelectedDoctor != null
+        ? $"Selected: {SelectedDoctor.Name}"
+        : string.IsNullOrWhiteSpace(DoctorSearch) ? "Optional" : $"Doctor to use or add: {DoctorSearch.Trim()}";
     private async Task SearchDoctorsAsync()
     {
         var v = ++_dver;
@@ -220,12 +241,6 @@ public sealed class NewOrderViewModel : ViewModelBase
         }
         catch (Exception ex) { Ui.HandleException(ex); }
     }
-    public ICommand AddDoctorCommand => new RelayCommand(text =>
-    {
-        var d = _dialogs.EditDoctor(null, text as string);
-        if (d != null) SelectedDoctor = d; // auto-select the newly created doctor
-    });
-
     // Test picker
     public ObservableCollection<LabTest> AvailableTests { get; } = new();
     public LabTest? SelectedAvailable { get; set; }
@@ -263,14 +278,14 @@ public sealed class NewOrderViewModel : ViewModelBase
     private PaymentMethod? _method; public PaymentMethod? Method { get => _method; set => Set(ref _method, value); }
     private string? _reference; public string? PaymentReference { get => _reference; set => Set(ref _reference, value); }
     private string? _notes; public string? Notes { get => _notes; set => Set(ref _notes, value); }
-    private decimal _sub, _net, _bal;
-    public decimal Subtotal { get => _sub; private set => Set(ref _sub, value); }
-    public decimal Net { get => _net; private set => Set(ref _net, value); }
-    public decimal Balance { get => _bal; private set => Set(ref _bal, value); }
+    private long _sub, _net, _bal;
+    public long Subtotal { get => _sub; private set => Set(ref _sub, value); }
+    public long Net { get => _net; private set => Set(ref _net, value); }
+    public long Balance { get => _bal; private set => Set(ref _bal, value); }
     public string Warning => Lines.Any(l => l.Test.Price <= 0) ? "Some selected tests have no price set. An administrator must set prices before billing."
         : Lines.Any(l => l.Test.PriceIsSample) ? "Some prices are SAMPLE values (demo data), not official prices." : "";
 
-    private static decimal Parse(string s) => decimal.TryParse(s, NumberStyles.Number, CultureInfo.CurrentCulture, out var d) ? d : 0;
+    private static long Parse(string s) => MoneyParser.TryParseWholeRupees(s, CultureInfo.CurrentCulture, out var amount) ? amount : 0;
     private void Recalc()
     {
         Subtotal = Lines.Sum(l => l.Price);
@@ -287,15 +302,22 @@ public sealed class NewOrderViewModel : ViewModelBase
         await SearchPatientsAsync(); await SearchDoctorsAsync(); await SearchTestsAsync();
     }
 
-    public ICommand PayFullCommand => new RelayCommand(() => PaymentText = Net.ToString("0.##"));
+    public ICommand PayFullCommand => new RelayCommand(() => PaymentText = Net.ToString("N0", CultureInfo.CurrentCulture));
 
     public ICommand SaveCommand => new AsyncRelayCommand(async () =>
     {
-        if (SelectedPatient == null) throw new BusinessRuleException("Select a patient (or add a new one).");
+        var patientName = SelectedPatient?.FullName ?? PatientSearch.Trim();
+        if (string.IsNullOrWhiteSpace(patientName)) throw new BusinessRuleException("Enter a patient name.");
+        if (!MoneyParser.TryParseWholeRupees(DiscountText, CultureInfo.CurrentCulture, out var discount))
+            throw new BusinessRuleException("Enter a whole-rupee discount without decimals.");
+        if (!MoneyParser.TryParseWholeRupees(PaymentText, CultureInfo.CurrentCulture, out var payment))
+            throw new BusinessRuleException("Enter a whole-rupee payment without decimals.");
         var req = new CreateOrderRequest
         {
-            PatientId = SelectedPatient.Id, DoctorId = SelectedDoctor?.Id, TestIds = Lines.Select(l => l.Test.Id).ToList(),
-            Discount = Parse(DiscountText), InitialPayment = Parse(PaymentText), PaymentMethodId = Method?.Id,
+            PatientId = SelectedPatient?.Id, PatientName = patientName,
+            DoctorId = SelectedDoctor?.Id, DoctorName = SelectedDoctor?.Name ?? DoctorSearch.Trim(),
+            TestIds = Lines.Select(l => l.Test.Id).ToList(),
+            Discount = discount, InitialPayment = payment, PaymentMethodId = Method?.Id,
             PaymentReference = PaymentReference, Notes = Notes
         };
         var res = await _orders.CreateAsync(req);
@@ -313,7 +335,8 @@ public sealed class NewOrderViewModel : ViewModelBase
 
     private void Reset()
     {
-        SelectedPatient = null; SelectedDoctor = null; Lines.Clear(); DiscountText = "0"; PaymentText = "0"; PaymentReference = null; Notes = null; Recalc();
+        SelectedPatient = null; SelectedDoctor = null; PatientSearch = ""; DoctorSearch = "";
+        Lines.Clear(); DiscountText = "0"; PaymentText = "0"; PaymentReference = null; Notes = null; Recalc();
     }
 }
 
@@ -323,14 +346,24 @@ public sealed class OrdersViewModel : ViewModelBase
     public OrdersViewModel(OrderService svc, IDialogService dialogs, INavigator nav, ICurrentUser user) { _svc = svc; _dialogs = dialogs; _nav = nav; _user = user; }
 
     public bool CanCreate => _user.Has(Permissions.OrdersCreate);
-    public DateTime From { get; set; } = DateTime.Today;
-    public DateTime To { get; set; } = DateTime.Today;
+    public DateTime? From { get; set; }
+    public DateTime? To { get; set; }
     public string? Text { get; set; }
     public string[] StatusOptions { get; } = { "All", "Registered", "InProgress", "Completed", "Cancelled" };
     public string StatusFilter { get; set; } = "All";
     public bool OnlyBalance { get; set; }
     public ObservableCollection<LabOrder> Orders { get; } = new();
-    public LabOrder? Selected { get; set; }
+    private LabOrder? _selected;
+    public LabOrder? Selected
+    {
+        get => _selected;
+        set
+        {
+            if (Set(ref _selected, value))
+                OnPropertyChanged(nameof(CanPrintReport));
+        }
+    }
+    public bool CanPrintReport => Selected != null && (_user.Has(Permissions.ReportsPrint) || _user.Has(Permissions.ResultsVerify));
     public override Task LoadAsync() => SearchAsync();
 
     private async Task SearchAsync()
@@ -345,5 +378,6 @@ public sealed class OrdersViewModel : ViewModelBase
     }
     public ICommand SearchCommand => new AsyncRelayCommand(SearchAsync);
     public ICommand OpenCommand => new RelayCommand(() => { if (Selected != null) { _dialogs.ShowOrder(Selected.Id); _ = SearchAsync(); } });
+    public ICommand PrintReportCommand => new RelayCommand(() => { if (CanPrintReport) _dialogs.PreviewReport(Selected!.Id); });
     public ICommand NewCommand => new RelayCommand(() => _nav.Go<NewOrderViewModel>());
 }

@@ -16,8 +16,8 @@
                 <DataGridTextColumn Header="Order" Binding="{Binding OrderNo}" Width="150"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
                 <DataGridTextColumn Header="Report" Binding="{Binding Report.Status}" Width="130"/>
-                <DataGridTextColumn Header="Net" Binding="{Binding NetAmount, StringFormat=N2}" Width="90"/>
-                <DataGridTextColumn Header="Balance" Binding="{Binding Balance, StringFormat=N2}" Width="90"/>
+                <DataGridTextColumn Header="Net" Binding="{Binding NetAmount, StringFormat=N0}" Width="90"/>
+                <DataGridTextColumn Header="Balance" Binding="{Binding Balance, StringFormat=N0}" Width="90"/>
                 <DataGridTextColumn Header="Doctor" Binding="{Binding Doctor.Name}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>

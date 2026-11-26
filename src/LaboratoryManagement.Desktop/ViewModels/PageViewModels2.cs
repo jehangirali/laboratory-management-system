@@ -20,8 +20,9 @@ public sealed class SamplesViewModel : ViewModelBase
     public SamplesViewModel(SampleService svc, IDialogService dialogs, SettingsService settings)
     { _svc = svc; _dialogs = dialogs; _settings = settings; }
 
-    public bool RequireCollection => _settings.GetBool(SettingKeys.RequireSampleCollection, true);
-    public bool RequireReceive => _settings.GetBool(SettingKeys.RequireReceiveInLab, true);
+    public bool RequireCollection => _settings.FullWorkflow && _settings.GetBool(SettingKeys.RequireSampleCollection, true);
+    public bool RequireReceive => _settings.FullWorkflow && _settings.GetBool(SettingKeys.RequireReceiveInLab, true);
+    public bool ShowFullWorkflowActions => _settings.FullWorkflow;
 
     public DateTime From { get; set; } = DateTime.Today;
     public DateTime To { get; set; } = DateTime.Today;
@@ -87,10 +88,29 @@ public sealed class ResultsViewModel : ViewModelBase
     public ResultsViewModel(ResultService svc, IDialogService dialogs, SettingsService settings)
     { _svc = svc; _dialogs = dialogs; _settings = settings; }
 
+    public bool FullWorkflow => _settings.FullWorkflow;
+    public bool ShowFullWorkflowControls => FullWorkflow;
+    public bool ShowSimplifiedSave => !FullWorkflow;
     public bool RequireVerification => _settings.GetBool(SettingKeys.RequireVerification, true);
+    public bool ShowVerificationControls => FullWorkflow && RequireVerification;
     public string SubmitLabel => RequireVerification ? "Submit for verification" : "Save and finalize";
 
-    public ObservableCollection<WorklistItem> Worklist { get; } = new();
+    public ObservableCollection<WorklistItem> PendingWorklist { get; } = new();
+    public ObservableCollection<WorklistItem> CompletedWorklist { get; } = new();
+    private int _selectedWorklistTab;
+    public int SelectedWorklistTab
+    {
+        get => _selectedWorklistTab;
+        set
+        {
+            if (Set(ref _selectedWorklistTab, value))
+            {
+                OnPropertyChanged(nameof(ActiveWorklist));
+                Selected = null;
+            }
+        }
+    }
+    public ObservableCollection<WorklistItem> ActiveWorklist => SelectedWorklistTab == 1 ? CompletedWorklist : PendingWorklist;
     private string _search = ""; public string SearchText { get => _search; set => Set(ref _search, value); }
     private bool _incReady; public bool IncludeReady { get => _incReady; set => Set(ref _incReady, value); }
     private WorklistItem? _selected;
@@ -100,13 +120,34 @@ public sealed class ResultsViewModel : ViewModelBase
     public bool CanEdit => Sheet != null && !Sheet.IsLocked;
     public string? Banner => Sheet == null ? null
         : Sheet.IsLocked ? "This result is verified and locked. A report amendment must be started from the Verification page."
+        : !FullWorkflow && Sheet.Status == OrderTestStatus.Verified ? "Saved result. Corrections require a reason and the latest report will be printed."
         : Sheet.IsAmendment ? $"AMENDMENT IN PROGRESS - reason: {Sheet.AmendmentReason}" : null;
 
     public override Task LoadAsync() => RefreshAsync();
     public async Task RefreshAsync()
     {
-        var list = await _svc.GetWorklistAsync(IncludeReady, SearchText);
-        Worklist.Clear(); foreach (var w in list) Worklist.Add(w);
+        var selectedId = Selected?.OrderTestId;
+        var pending = await _svc.GetWorklistAsync(IncludeReady, SearchText);
+        var completed = await _svc.GetWorklistAsync(IncludeReady, SearchText, completed: true);
+        PendingWorklist.Clear(); foreach (var w in pending) PendingWorklist.Add(w);
+        CompletedWorklist.Clear(); foreach (var w in completed) CompletedWorklist.Add(w);
+
+        if (selectedId == null) return;
+        var selectedPending = PendingWorklist.FirstOrDefault(w => w.OrderTestId == selectedId);
+        if (selectedPending != null)
+        {
+            SelectedWorklistTab = 0;
+            Selected = selectedPending;
+            return;
+        }
+        var selectedCompleted = CompletedWorklist.FirstOrDefault(w => w.OrderTestId == selectedId);
+        if (selectedCompleted != null)
+        {
+            SelectedWorklistTab = 1;
+            Selected = selectedCompleted;
+            return;
+        }
+        Selected = null;
     }
     public ICommand RefreshCommand => new AsyncRelayCommand(RefreshAsync);
 
@@ -127,16 +168,23 @@ public sealed class ResultsViewModel : ViewModelBase
     {
         if (Sheet == null) return;
         var id = Sheet.OrderTestId;
-        await _svc.SaveAsync(id, Rows.ToList(), submit);
+        string? amendmentReason = null;
+        if (!FullWorkflow && Sheet.Status == OrderTestStatus.Verified)
+        {
+            amendmentReason = _dialogs.Prompt("Amend saved results", "Reason for correcting these results (recorded permanently)");
+            if (amendmentReason == null) return;
+        }
+        await _svc.SaveAsync(id, Rows.ToList(), submit, amendmentReason);
         if (Rows.Any(r => r.Flag is ResultFlag.CriticalHigh or ResultFlag.CriticalLow))
             Ui.Warning("One or more values are outside the configured CRITICAL limits. Follow your laboratory's critical-value communication policy.", "Critical value");
         await RefreshAsync();
-        Selected = Worklist.FirstOrDefault(w => w.OrderTestId == id);
+        Selected = ActiveWorklist.FirstOrDefault(w => w.OrderTestId == id);
         if (Selected == null) { Rows.Clear(); Sheet = null; }
-        Status = submit ? "Submitted for verification." : "Draft saved.";
+        Status = !FullWorkflow ? "Results saved and completed." : submit ? "Submitted for verification." : "Draft saved.";
     }
     public ICommand SaveDraftCommand => new AsyncRelayCommand(() => SaveAsync(false));
     public ICommand SubmitCommand => new AsyncRelayCommand(() => SaveAsync(true));
+    public ICommand SaveDirectCommand => new AsyncRelayCommand(() => SaveAsync(false));
     public ICommand HistoryCommand => new AsyncRelayCommand(async () =>
     {
         if (Sheet == null) return;
@@ -310,16 +358,22 @@ public sealed class SettingsViewModel : ViewModelBase
     public SettingsViewModel(SettingsService svc, DemoDataService demo, IDialogService dialogs) { _svc = svc; _demo = demo; _dialogs = dialogs; }
     public ObservableCollection<SettingRow> Settings { get; } = new();
     public SettingRow? Selected { get; set; }
+    private bool _fullWorkflowEnabled;
+    public bool FullWorkflowEnabled { get => _fullWorkflowEnabled; set => Set(ref _fullWorkflowEnabled, value); }
     public override async Task LoadAsync()
     {
         var all = await _svc.GetAllAsync();
         Settings.Clear();
-        foreach (var s in all.Where(s => s.Group != "System")) Settings.Add(new SettingRow { Key = s.Key, Group = s.Group, Description = s.Description, Value = s.Value });
+        var workflow = all.FirstOrDefault(s => s.Key == SettingKeys.FullWorkflowEnabled);
+        FullWorkflowEnabled = workflow != null && bool.TryParse(workflow.Value, out var enabled) && enabled;
+        foreach (var s in all.Where(s => s.Group != "System" && s.Key != SettingKeys.FullWorkflowEnabled))
+            Settings.Add(new SettingRow { Key = s.Key, Group = s.Group, Description = s.Description, Value = s.Value });
     }
     public ICommand SaveCommand => new AsyncRelayCommand(async () =>
     {
-        await _svc.SaveAsync(Settings.Select(s => new AppSetting { Key = s.Key, Value = s.Value }));
-        Ui.Info("Settings saved.");
+        await _svc.SaveAsync(Settings.Select(s => new AppSetting { Key = s.Key, Value = s.Value })
+            .Append(new AppSetting { Key = SettingKeys.FullWorkflowEnabled, Value = FullWorkflowEnabled ? "true" : "false" }));
+        Ui.Info("Settings saved. Workflow changes apply after you sign out and sign in again.");
     });
     public ICommand BrowseLogoCommand => new RelayCommand(() =>
     {
@@ -339,26 +393,6 @@ public sealed class SettingsViewModel : ViewModelBase
         Ui.Info(await _demo.LoadAsync());
     });
     public ICommand PasswordCommand => new RelayCommand(() => _dialogs.ChangePassword());
-}
-
-public sealed class AuditViewModel : ViewModelBase
-{
-    private readonly UserService _svc;
-    public AuditViewModel(UserService svc) => _svc = svc;
-    public ObservableCollection<AuditLog> Logs { get; } = new();
-    public ObservableCollection<LoginHistory> Logins { get; } = new();
-    public string? Text { get; set; }
-    public DateTime? From { get; set; } = DateTime.Today.AddDays(-7);
-    public DateTime? To { get; set; } = DateTime.Today;
-    public override async Task LoadAsync() => await SearchAsync();
-    private async Task SearchAsync()
-    {
-        var a = await _svc.GetAuditAsync(Text, From, To);
-        Logs.Clear(); foreach (var x in a) Logs.Add(x);
-        var l = await _svc.GetLoginHistoryAsync();
-        Logins.Clear(); foreach (var x in l) Logins.Add(x);
-    }
-    public ICommand SearchCommand => new AsyncRelayCommand(SearchAsync);
 }
 
 public sealed class BackupViewModel : ViewModelBase

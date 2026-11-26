@@ -72,14 +72,14 @@ public sealed class DocumentFactory
         var compact = m.Template == ReportTemplateType.Hematology;
         var title = m.Template switch { ReportTemplateType.Hematology => "HEMATOLOGY REPORT", ReportTemplateType.Profile => "PROFILE / PANEL REPORT", _ => "LABORATORY REPORT" };
         var unverified = !m.IsVerified;
-        var amendNote = m.IsAmended ? $"AMENDED REPORT - Version {m.VersionNo}" : null;
+        var amendNote = m.IsAmended ? "AMENDED REPORT" : null;
 
         FrameworkElement Header(int page, int total)
         {
             var panel = new StackPanel();
             string? rt = unverified ? "PRELIMINARY - NOT VERIFIED" : amendNote;
             panel.Children.Add(LabHeader(m.LabName, m.LabAddress, m.LabPhone, m.LabEmail, m.LabLicense, m.LogoPath, fs, rt,
-                unverified ? "Not valid for clinical use" : (m.IsAmended ? "Supersedes earlier versions" : null),
+                unverified ? "Not valid for clinical use" : (m.IsAmended ? "Corrected report" : null),
                 (unverified || m.IsAmended) ? Brushes.Firebrick : null));
             panel.Children.Add(Rule());
             panel.Children.Add(Tb(title, fs * 1.05, FontWeights.SemiBold, null, TextAlignment.Center));
@@ -225,13 +225,13 @@ public sealed class DocumentFactory
             return row;
         }
         g.Rows.Add(R("Test / Panel", $"Price ({cur})", true));
-        foreach (var l in order.Lines) g.Rows.Add(R(l.LabTest.Name, l.Price.ToString("N2")));
-        g.Rows.Add(R("Subtotal", order.Subtotal.ToString("N2"), false, true));
-        g.Rows.Add(R("Discount", "- " + order.Discount.ToString("N2")));
-        g.Rows.Add(R("Net amount", order.NetAmount.ToString("N2"), true));
-        g.Rows.Add(R($"{(payment.Type == PaymentType.Refund ? "Refunded now" : "Received now")} ({payment.PaymentMethod.Name})", payment.Amount.ToString("N2"), true, true));
-        g.Rows.Add(R("Total paid to date", order.PaidAmount.ToString("N2")));
-        g.Rows.Add(R("Balance due", order.Balance.ToString("N2"), true));
+        foreach (var l in order.Lines) g.Rows.Add(R(l.LabTest.Name, l.Price.ToString("N0")));
+        g.Rows.Add(R("Subtotal", order.Subtotal.ToString("N0"), false, true));
+        g.Rows.Add(R("Discount", "- " + order.Discount.ToString("N0")));
+        g.Rows.Add(R("Net amount", order.NetAmount.ToString("N0"), true));
+        g.Rows.Add(R($"{(payment.Type == PaymentType.Refund ? "Refunded now" : "Received now")} ({payment.PaymentMethod.Name})", payment.Amount.ToString("N0"), true, true));
+        g.Rows.Add(R("Total paid to date", order.PaidAmount.ToString("N0")));
+        g.Rows.Add(R("Balance due", order.Balance.ToString("N0"), true));
         body.Blocks.Add(table);
         if (!string.IsNullOrWhiteSpace(payment.Reason)) Line2("Reason:", payment.Reason!);
         Line2("Payment status:", order.PaymentStatus.ToString());

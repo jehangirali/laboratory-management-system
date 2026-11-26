@@ -17,8 +17,10 @@
             <Button Content="Refresh list" Command="{Binding RefreshCommand}"/>
             <Button Content="Collect" Style="{StaticResource PrimaryButton}" Command="{Binding CollectCommand}" Visibility="{Binding RequireCollection, Converter={StaticResource BoolToVis}}"/>
             <Button Content="Receive in lab" Style="{StaticResource PrimaryButton}" Command="{Binding ReceiveCommand}" Visibility="{Binding RequireReceive, Converter={StaticResource BoolToVis}}"/>
-            <Button Content="Reject..." Style="{StaticResource DangerButton}" Command="{Binding RejectCommand}"/>
-            <Button Content="Request recollection" Command="{Binding RecollectCommand}"/>
+            <Button Content="Reject..." Style="{StaticResource DangerButton}" Command="{Binding RejectCommand}"
+                    Visibility="{Binding ShowFullWorkflowActions, Converter={StaticResource BoolToVis}}"/>
+            <Button Content="Request recollection" Command="{Binding RecollectCommand}"
+                    Visibility="{Binding ShowFullWorkflowActions, Converter={StaticResource BoolToVis}}"/>
             <Button Content="Print label" Command="{Binding LabelCommand}"/>
             <Button Content="Print all labels" Command="{Binding LabelAllCommand}"/>
             <Button Content="Order" Command="{Binding OrderCommand}"/>

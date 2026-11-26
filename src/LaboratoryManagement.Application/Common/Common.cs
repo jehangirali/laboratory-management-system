@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using LaboratoryManagement.Domain;
 using LaboratoryManagement.Domain.Entities;
@@ -16,6 +17,12 @@ public class PermissionDeniedException : Exception
 {
     public PermissionDeniedException(string permission)
         : base($"You do not have permission to perform this action ({permission}).") { }
+}
+
+public static class MoneyParser
+{
+    public static bool TryParseWholeRupees(string? text, CultureInfo culture, out long amount)
+        => long.TryParse(text, NumberStyles.Number, culture, out amount);
 }
 
 /// <summary>Minimal INotifyPropertyChanged base shared by DTOs and view models.</summary>
@@ -47,8 +54,7 @@ public static class TimeHelper
 
 public static class NumberGenerator
 {
-    /// <summary>Increments a named sequence inside the caller's unit of work. The sequence row is protected by a
-    /// rowversion; concurrent workstations get a concurrency exception and the caller retries.</summary>
+    /// <summary>Increments a named sequence inside the caller's unit of work.</summary>
     public static async Task<long> NextAsync(IAppDbContext db, string key, CancellationToken ct = default)
     {
         // Check entities already added in this unit of work first (several numbers may be drawn from one sequence).
@@ -66,13 +72,13 @@ public static class NumberGenerator
 
 public static class Retry
 {
-    /// <summary>Retries a whole unit of work (new context each attempt) on concurrency / duplicate-number collisions.</summary>
+    /// <summary>Retries a whole unit of work (new context each attempt) on update or duplicate-number collisions.</summary>
     public static async Task<T> RunAsync<T>(Func<Task<T>> work, int attempts = 4)
     {
         for (var i = 1; ; i++)
         {
             try { return await work(); }
-            catch (Exception ex) when (i < attempts && (ex is DbUpdateConcurrencyException || ex is DbUpdateException))
+            catch (Exception ex) when (i < attempts && ex is DbUpdateException)
             {
                 await Task.Delay(50 * i);
             }
@@ -99,6 +105,7 @@ public static class SettingKeys
     public const string RequireSampleCollection = "Workflow.RequireSampleCollection";
     public const string RequireReceiveInLab = "Workflow.RequireReceiveInLab";
     public const string RequireVerification = "Workflow.RequireVerification";
+    public const string FullWorkflowEnabled = "Workflow.FullWorkflowEnabled";
     public const string ReportTemplate = "Report.Template";
     public const string ReportFontSize = "Report.FontSize";
     public const string ReportMarginMm = "Report.MarginMm";

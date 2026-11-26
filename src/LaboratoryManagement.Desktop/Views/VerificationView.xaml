@@ -2,7 +2,7 @@
     <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <TextBlock Text="Report verification &amp; amendments" Style="{StaticResource PageTitle}"/>
-        <TabControl Grid.Row="1" Visibility="{Binding RequireVerification, Converter={StaticResource BoolToVis}}">
+        <TabControl Grid.Row="1" Visibility="{Binding ShowVerificationControls, Converter={StaticResource BoolToVis}}">
             <TabItem Header="Awaiting verification">
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions><ColumnDefinition Width="420"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>

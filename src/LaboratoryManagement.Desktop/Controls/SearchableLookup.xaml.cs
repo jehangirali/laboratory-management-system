@@ -17,7 +17,8 @@ public partial class SearchableLookup : UserControl
     public static readonly DependencyProperty SearchTextProperty = DependencyProperty.Register(nameof(SearchText), typeof(string), typeof(SearchableLookup),
         new FrameworkPropertyMetadata("", FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
     public static readonly DependencyProperty DisplayMemberPathProperty = DependencyProperty.Register(nameof(DisplayMemberPath), typeof(string), typeof(SearchableLookup), new PropertyMetadata("DisplayText"));
-    public static readonly DependencyProperty AddNewCommandProperty = DependencyProperty.Register(nameof(AddNewCommand), typeof(ICommand), typeof(SearchableLookup));
+    public static readonly DependencyProperty AddNewCommandProperty = DependencyProperty.Register(nameof(AddNewCommand), typeof(ICommand), typeof(SearchableLookup),
+        new PropertyMetadata(null, (d, _) => ((SearchableLookup)d).UpdateAddButton()));
     public static readonly DependencyProperty AddNewLabelProperty = DependencyProperty.Register(nameof(AddNewLabel), typeof(string), typeof(SearchableLookup), new PropertyMetadata("Add new...", (d, e) => ((SearchableLookup)d).AddBtn.Content = e.NewValue));
     public static readonly DependencyProperty PlaceholderProperty = DependencyProperty.Register(nameof(Placeholder), typeof(string), typeof(SearchableLookup), new PropertyMetadata("", (d, e) => ((SearchableLookup)d).Watermark.Text = (string)e.NewValue));
 
@@ -36,7 +37,11 @@ public partial class SearchableLookup : UserControl
         InitializeComponent();
         AddBtn.Content = AddNewLabel;
         List.DisplayMemberPath = DisplayMemberPath;
+        UpdateAddButton();
     }
+
+    private void UpdateAddButton()
+        => AddBtn.Visibility = AddNewCommand == null ? Visibility.Collapsed : Visibility.Visible;
 
     private string TextOf(object? item)
         => item == null ? "" : item.GetType().GetProperty(DisplayMemberPath)?.GetValue(item)?.ToString() ?? item.ToString() ?? "";

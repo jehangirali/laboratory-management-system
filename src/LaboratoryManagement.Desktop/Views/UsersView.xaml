@@ -15,7 +15,6 @@
                             <DataGridTextColumn Header="Full name" Binding="{Binding FullName}" Width="*"/>
                             <DataGridTextColumn Header="Designation" Binding="{Binding Designation}" Width="180"/>
                             <DataGridCheckBoxColumn Header="Active" Binding="{Binding IsActive, Mode=OneWay}" Width="60"/>
-                            <DataGridTextColumn Header="Last login" Binding="{Binding LastLoginAt, Converter={StaticResource LocalDate}}" Width="150"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </DockPanel>
